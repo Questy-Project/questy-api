@@ -3,6 +3,8 @@
   import { TypeOrmModule } from '@nestjs/typeorm';
   import { AppController } from './app.controller';
   import { AppService } from './app.service';
+  import { AuthModule } from './auth/auth.module';
+  import { ActivitiesModule } from './activities/activities.module';
 
 
 @Module({
@@ -16,7 +18,7 @@
       useFactory: (config : ConfigService )=>({
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
-        
+
         //Chaque module enregistrera ses entités lui même via TypeOrmModule.forFeature()
         autoLoadEntities: true,
 
@@ -27,6 +29,8 @@
         ssl: config.get<string>('NODE_ENV') === 'production' ? {rejectUnauthorized: false} : undefined,
       }),
     }),
+    AuthModule,
+    ActivitiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
