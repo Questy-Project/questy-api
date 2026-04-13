@@ -14,7 +14,15 @@ export class UsersService{
         return this.userRepository.findOne({ where: {email}});
     }
 
+    findById(id: string): Promise<User|null>{
+        return this.userRepository.findOne({where: {id}})
+    }
+
     create(data: Partial<User>): Promise<User>{
         return this.userRepository.save(this.userRepository.create(data));
+    }
+    async update(id: string, data: Partial<User>): Promise<User>{
+        await this.userRepository.update(id,data);
+        return this.userRepository.findOneOrFail ({where: {id}});
     }
 }
