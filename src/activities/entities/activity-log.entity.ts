@@ -29,7 +29,7 @@ export class ActivityLog{
     @Column()
     duration!: number;
 
-    @Column()
+    @Column({type:'float'})
     intensity!: number;
 
     @Column()
