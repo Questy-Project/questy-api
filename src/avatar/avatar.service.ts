@@ -74,4 +74,58 @@ export class AvatarService {
     return 'Aventurier';
   }
 
+  // Appelé par ActivitiesService après chaque déclaration d'activité
+  async updateAfterActivity(
+    userId: string,
+    xpGained: number,
+    statPrimary: StatName | null,
+    statSecondary: StatName | null,
+  ): Promise<Avatar> {
+    const avatar = await this.findByUserId(userId);
+
+    // Répartition XP : 70% statPrimary, 30% statSecondary
+    if (statPrimary) {
+      const primary = Math.round(xpGained * 0.7);
+      const secondary = statSecondary ? xpGained - primary : 0;
+      avatar[this.statToField(statPrimary)] += primary;
+      if (statSecondary) {
+        avatar[this.statToField(statSecondary)] += secondary;
+      }
+    }
+
+    avatar.xp += xpGained;
+    avatar.level = this.computeLevel(avatar.xp);
+    avatar.heroClass = this.computeHeroClass(avatar);
+
+    return this.avatarRepository.save(avatar);
+  }
+
+  // Convertit un StatName en nom de propriété ('strength', 'agility', etc.)
+  private statToField(
+    stat: StatName,
+  ):
+    | 'strength'
+    | 'agility'
+    | 'endurance'
+    | 'intelligence'
+    | 'spirit'
+    | 'vitality' {
+    const map: Record<
+      StatName,
+      | 'strength'
+      | 'agility'
+      | 'endurance'
+      | 'intelligence'
+      | 'spirit'
+      | 'vitality'
+    > = {
+      [StatName.STRENGTH]: 'strength',
+      [StatName.AGILITY]: 'agility',
+      [StatName.ENDURANCE]: 'endurance',
+      [StatName.INTELLIGENCE]: 'intelligence',
+      [StatName.SPIRIT]: 'spirit',
+      [StatName.VITALITY]: 'vitality',
+    };
+    return map[stat];
+  }
 }
