@@ -4,6 +4,10 @@ import { Activity } from "./entities/activity.entity";
 import { ActivityLog } from "./entities/activity-log.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { LogActivityDto } from './dto/log-activity.dto';
+import { AvatarService } from '../avatar/avatar.service';
+import { PartsService } from '../parts/parts.service';
+import { StatName } from '../common/enums/stat-name.enum';
+
 
 @Injectable()
 export class ActivitiesService{
@@ -11,7 +15,10 @@ export class ActivitiesService{
         @InjectRepository(Activity)
         private readonly activityRepository: Repository<Activity>,
         @InjectRepository(ActivityLog)
-        private readonly activityLogRepository: Repository<ActivityLog>
+        private readonly activityLogRepository: Repository<ActivityLog>,
+        // Services injectés directement (pas de @InjectRepository — ce ne sont pas des repositories)
+        private readonly avatarService: AvatarService,
+        private readonly partsService: PartsService,
     ){}
 
     async findAll(search?:string): Promise<Activity[]> {
@@ -46,9 +53,15 @@ export class ActivitiesService{
             throw new BadRequestException("Tu as atteint la limite quotidienne de 360 XP.")
         }
         let xpMultiplier = 1.0;
+        let statPrimary: StatName | null = null;
+        let statSecondary: StatName | null = null;
         if(dto.activityId){
             const activity = await this.activityRepository.findOne({where: {id: dto.activityId}})
-            if (activity) xpMultiplier = activity.xpMultiplier;
+            if (activity) {
+                xpMultiplier = activity.xpMultiplier;
+                statPrimary = activity.statPrimary;
+                statSecondary = activity.statSecondary ?? null;
+            }
         }
 
         const rawXp= Math.round(dto.duration*dto.intensity*xpMultiplier);
@@ -67,6 +80,12 @@ export class ActivitiesService{
             xpGained,
             partsUnlocked,
         });
-        return this.activityLogRepository.save(log);
+        const savedLog = await this.activityLogRepository.save(log);
+
+        // Mise à jour avatar (stats 70/30 + niveau + heroClass) et stock de parties
+        await this.avatarService.updateAfterActivity(userId, xpGained, statPrimary, statSecondary);
+        await this.partsService.addParts(userId, partsUnlocked);
+
+        return savedLog;
     }
 }
