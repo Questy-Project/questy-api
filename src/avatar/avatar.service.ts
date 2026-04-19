@@ -64,10 +64,21 @@ export class AvatarService {
     if (dominant.length === 2) {
       const pair = [...dominant].sort().join('+');
       const comboMap: Record<string, string> = {
-        [`${StatName.AGILITY}+${StatName.STRENGTH}`]: 'Berserker',
+        [`${StatName.AGILITY}+${StatName.STRENGTH}`]:      'Berserker',
         [`${StatName.INTELLIGENCE}+${StatName.STRENGTH}`]: 'Mage de guerre',
-        [`${StatName.ENDURANCE}+${StatName.SPIRIT}`]: 'Druide',
-        [`${StatName.INTELLIGENCE}+${StatName.SPIRIT}`]: 'Sage lettré',
+        [`${StatName.ENDURANCE}+${StatName.SPIRIT}`]:      'Druide',
+        [`${StatName.INTELLIGENCE}+${StatName.SPIRIT}`]:   'Sage lettré',
+        [`${StatName.ENDURANCE}+${StatName.STRENGTH}`]:    'Chevalier',
+        [`${StatName.SPIRIT}+${StatName.STRENGTH}`]:       'Templier',
+        [`${StatName.STRENGTH}+${StatName.VITALITY}`]:     'Champion',
+        [`${StatName.AGILITY}+${StatName.ENDURANCE}`]:     'Rôdeur',
+        [`${StatName.AGILITY}+${StatName.INTELLIGENCE}`]:  'Illusionniste',
+        [`${StatName.AGILITY}+${StatName.SPIRIT}`]:        'Moine',
+        [`${StatName.AGILITY}+${StatName.VITALITY}`]:      'Danseur de lame',
+        [`${StatName.ENDURANCE}+${StatName.INTELLIGENCE}`]:'Alchimiste',
+        [`${StatName.ENDURANCE}+${StatName.VITALITY}`]:    'Colosse',
+        [`${StatName.INTELLIGENCE}+${StatName.VITALITY}`]: 'Nécromant',
+        [`${StatName.SPIRIT}+${StatName.VITALITY}`]:       'Chaman',
       };
       return comboMap[pair] ?? 'Aventurier';
     }
