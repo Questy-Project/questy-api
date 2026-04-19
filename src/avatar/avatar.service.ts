@@ -29,7 +29,7 @@ export class AvatarService {
 
   // XP total requis pour atteindre un niveau donné (utilisé dans le controller)
   xpForLevel(level: number): number {
-    return ((level * (level + 1)) / 2) * 100;
+    return (((level - 1) * level) / 2) * 100;
   }
 
   computeHeroClass(avatar: Avatar): string {

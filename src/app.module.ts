@@ -5,6 +5,8 @@
   import { AppService } from './app.service';
   import { AuthModule } from './auth/auth.module';
   import { ActivitiesModule } from './activities/activities.module';
+  import { AvatarModule } from './avatar/avatar.module';
+import { PartsModule } from './parts/parts.module';
 
 
 @Module({
@@ -31,6 +33,8 @@
     }),
     AuthModule,
     ActivitiesModule,
+    AvatarModule,
+    PartsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
