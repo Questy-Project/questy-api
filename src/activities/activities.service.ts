@@ -116,6 +116,7 @@ export class ActivitiesService {
   async findRecentByUserId(userId: string): Promise<ActivityLog[]> {
     return this.activityLogRepository.find({
       where: { userId },
+      relations: ['activity'],
       order: { loggedAt: 'DESC' },
       take: 10,
     });
