@@ -7,6 +7,7 @@
   import { ActivitiesModule } from './activities/activities.module';
   import { AvatarModule } from './avatar/avatar.module';
 import { PartsModule } from './parts/parts.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 
 @Module({
@@ -31,6 +32,7 @@ import { PartsModule } from './parts/parts.module';
         ssl: config.get<string>('NODE_ENV') === 'production' ? {rejectUnauthorized: false} : undefined,
       }),
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     ActivitiesModule,
     AvatarModule,
