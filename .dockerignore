@@ -1,4 +1,10 @@
 node_modules
 dist
 .env
-*.md
+.env.*
+.git
+.gitignore
+README.md
+docs
+test
+*.spec.ts
