@@ -59,7 +59,7 @@ export class ActivitiesService {
     const totalMinutes = logs.reduce((sum, l) => sum + l.duration, 0);
     const totalXp = logs.reduce((sum, l) => sum + l.xpGained, 0);
 
-    if (totalMinutes >= 180) {
+    if (totalMinutes + dto.duration > 180) {
       throw new BadRequestException(
         "Tu as atteint la limite quotidienne de 180 minutes d'activité.",
       );
