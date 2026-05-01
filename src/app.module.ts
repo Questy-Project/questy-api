@@ -1,11 +1,9 @@
-  import { Module } from '@nestjs/common';
-  import { ConfigModule, ConfigService } from '@nestjs/config';
-  import { TypeOrmModule } from '@nestjs/typeorm';
-  import { AppController } from './app.controller';
-  import { AppService } from './app.service';
-  import { AuthModule } from './auth/auth.module';
-  import { ActivitiesModule } from './activities/activities.module';
-  import { AvatarModule } from './avatar/avatar.module';
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from './auth/auth.module';
+import { ActivitiesModule } from './activities/activities.module';
+import { AvatarModule } from './avatar/avatar.module';
 import { PartsModule } from './parts/parts.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
@@ -38,7 +36,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     AvatarModule,
     PartsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}
