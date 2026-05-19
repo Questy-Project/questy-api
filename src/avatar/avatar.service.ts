@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Avatar } from './entities/avatar.entity';
 import { StatName } from '../common/enums/stat-name.enum';
+import { UpdateAvatarCustomizationDto } from './dto/update-avatar-customization.dto';
 
 @Injectable()
 export class AvatarService {
@@ -138,5 +139,17 @@ export class AvatarService {
       [StatName.VITALITY]: 'vitality',
     };
     return map[stat];
+  }
+
+  async updateCustomization(
+    userId: string,
+    dto: UpdateAvatarCustomizationDto,
+  ): Promise<Avatar> {
+    const avatar = await this.findByUserId(userId);
+    avatar.silhouette = dto.silhouette;
+    avatar.skinTone = dto.skinTone;
+    avatar.hairStyle = dto.hairStyle;
+    avatar.hairColor = dto.hairColor;
+    return this.avatarRepository.save(avatar);
   }
 }
