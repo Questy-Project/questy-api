@@ -11,11 +11,11 @@ export class UpdateAvatarCustomizationDto {
 
   @IsInt()
   @Min(1)
-  @Max(4)
+  @Max(20)
   hairStyle!: number;
 
   @IsInt()
   @Min(1)
-  @Max(6)
+  @Max(4)
   hairColor!: number;
 }
