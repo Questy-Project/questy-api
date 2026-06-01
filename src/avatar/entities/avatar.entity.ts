@@ -55,6 +55,9 @@ export class Avatar {
   @Column({ default: 1 })
   hairColor!: number;
 
+  @Column({ default: false })
+  showHood!: boolean;
+
   @UpdateDateColumn()
   updatedAt!: Date;
 

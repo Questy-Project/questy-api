@@ -1,4 +1,4 @@
-import { IsIn, IsInt, Max, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, Max, Min } from 'class-validator';
 
 export class UpdateAvatarCustomizationDto {
   @IsIn(['A', 'B'])
@@ -18,4 +18,7 @@ export class UpdateAvatarCustomizationDto {
   @Min(1)
   @Max(4)
   hairColor!: number;
+
+  @IsBoolean()
+  showHood!: boolean;
 }

@@ -147,9 +147,10 @@ export class AvatarService {
   ): Promise<Avatar> {
     const avatar = await this.findByUserId(userId);
     avatar.silhouette = dto.silhouette;
-    avatar.skinTone = dto.skinTone;
-    avatar.hairStyle = dto.hairStyle;
-    avatar.hairColor = dto.hairColor;
+    avatar.skinTone   = dto.skinTone;
+    avatar.hairStyle  = dto.hairStyle;
+    avatar.hairColor  = dto.hairColor;
+    avatar.showHood   = dto.showHood;
     return this.avatarRepository.save(avatar);
   }
 }

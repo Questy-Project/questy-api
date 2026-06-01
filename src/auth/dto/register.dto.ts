@@ -24,12 +24,12 @@ export class RegisterDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(4)
+  @Max(20)
   hairStyle?: number;
 
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(6)
+  @Max(4)
   hairColor?: number;
 }
