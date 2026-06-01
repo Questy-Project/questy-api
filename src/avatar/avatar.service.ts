@@ -99,9 +99,9 @@ export class AvatarService {
     if (statPrimary) {
       const primary = Math.round(xpGained * 0.7);
       const secondary = statSecondary ? xpGained - primary : 0;
-      avatar[this.statToField(statPrimary)] += primary;
+      avatar[this.statToField(statPrimary)] = Math.min(avatar[this.statToField(statPrimary)] + primary, 100);
       if (statSecondary) {
-        avatar[this.statToField(statSecondary)] += secondary;
+        avatar[this.statToField(statSecondary)] = Math.min(avatar[this.statToField(statSecondary)] + secondary, 100);
       }
     }
 

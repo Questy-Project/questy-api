@@ -4,9 +4,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
-  Max,
   MaxLength,
-  Min,
   MinLength,
 } from 'class-validator';
 
@@ -29,8 +27,7 @@ export class LogActivityDto {
   customCategory?: string;
 
   @IsInt()
-  @Min(1)
-  @Max(180)
+  @IsIn([30,60,90,120])
   duration!: number;
 
   @IsIn([1,1.5,2])
