@@ -35,7 +35,15 @@ export class AuthService {
       password: hashed,
     });
 
-    await this.avatarRepository.save(this.avatarRepository.create({userId: user.id}));
+    await this.avatarRepository.save(
+      this.avatarRepository.create({
+        userId: user.id,
+        silhouette: dto.silhouette ?? 'A',
+        skinTone: dto.skinTone ?? 1,
+        hairStyle: dto.hairStyle ?? 1,
+        hairColor: dto.hairColor ?? 1,
+      }),
+    );
 
     await this.partsRepository.save(this.partsRepository.create({userId: user.id}));
 

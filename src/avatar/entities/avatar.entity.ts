@@ -1,47 +1,64 @@
-  import { Column, Entity, JoinColumn, OneToOne,
-  PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
-  import { User } from '../../users/entities/user.entity';
+import { Column, Entity, JoinColumn, OneToOne,
+PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { User } from '../../users/entities/user.entity';
 
-  @Entity('avatars')
-  export class Avatar{
+@Entity('avatars')
+export class Avatar {
 
-    @PrimaryGeneratedColumn('uuid')
-    id!: string;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
-    @OneToOne(() => User, {onDelete: 'CASCADE'})
-    @JoinColumn()
-    user!: User;
-    @Column()
-    userId!: string;
+  @OneToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn()
+  user!: User;
 
-    @Column({default: 1})
-    level!: number;
+  @Column()
+  userId!: string;
 
-    @Column({default: 0})
-    xp!: number;
+  @Column({ default: 1 })
+  level!: number;
 
-    @Column({default: 'Aventurier'})
-    heroClass!: string;
+  @Column({ default: 0 })
+  xp!: number;
 
-    @Column({default: 0})
-    strength!: number;
+  @Column({ default: 'Aventurier' })
+  heroClass!: string;
 
-    @Column({default: 0})
-    agility!: number;
+  @Column({ default: 0 })
+  strength!: number;
 
-    @Column({default: 0})
-    endurance!: number;
+  @Column({ default: 0 })
+  agility!: number;
 
-    @Column({default: 0})
-    intelligence!: number;
+  @Column({ default: 0 })
+  endurance!: number;
 
-    @Column({default: 0})
-    spirit!: number;
+  @Column({ default: 0 })
+  intelligence!: number;
 
-    @Column({default: 0})
-    vitality!: number;
+  @Column({ default: 0 })
+  spirit!: number;
 
-    @UpdateDateColumn()
-    updatedAt!: Date;
+  @Column({ default: 0 })
+  vitality!: number;
 
-  }
+  // Silhouette A (corps masc.) ou B (corps fém.)
+  @Column({ default: 'A' })
+  silhouette!: string;
+
+  @Column({ default: 1 })
+  skinTone!: number;
+
+  @Column({ default: 1 })
+  hairStyle!: number;
+
+  @Column({ default: 1 })
+  hairColor!: number;
+
+  @Column({ default: false })
+  showHood!: boolean;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
+
+}
