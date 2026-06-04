@@ -12,6 +12,35 @@ export class AvatarService {
     private readonly avatarRepository: Repository<Avatar>,
   ) {}
 
+  // Constantes de calibration — stat = A × ln(B × xpCumulé + 1)
+  // Calibration : 2h intense/jour × 30 jours → 100 pts | 30 min légère × 24 jours actifs → ~50 pts
+  private readonly STAT_CURVE_A = 23;
+  private readonly STAT_CURVE_B = 0.015;
+
+  // Convertit un XP cumulé en points de stat affichés (plafond 100)
+  private xpToStat(xpCumule: number): number {
+    return Math.min(
+      Math.round(this.STAT_CURVE_A * Math.log(this.STAT_CURVE_B * xpCumule + 1)),
+      100,
+    );
+  }
+
+  // Formule inverse : convertit des points de stat en XP cumulé équivalent
+  // Utilisé par le reset mensuel pour repositionner le joueur sur la courbe
+  public statBaseToXp(statBase: number): number {
+    if (statBase === 0) return 0;
+    return (Math.exp(statBase / this.STAT_CURVE_A) - 1) / this.STAT_CURVE_B;
+  }
+
+  // Calcule le socle de fidélité à appliquer au début du mois suivant
+  // Récompense les joueurs assidus : <50→0, ≥50→5, ≥75→12, =100→20
+  public computeStatBase(stat: number): number {
+    if (stat >= 100) return 20;
+    if (stat >= 75)  return 12;
+    if (stat >= 50)  return 5;
+    return 0;
+  }
+
   async findByUserId(userId: string): Promise<Avatar> {
     const avatar = await this.avatarRepository.findOne({ where: { userId } });
     if (!avatar) throw new NotFoundException('Avatar introuvable');
@@ -137,6 +166,21 @@ export class AvatarService {
       [StatName.INTELLIGENCE]: 'intelligence',
       [StatName.SPIRIT]: 'spirit',
       [StatName.VITALITY]: 'vitality',
+    };
+    return map[stat];
+  }
+
+  // Convertit un StatName en nom de colonne XP correspondante
+  private statToXpField(
+    stat: StatName,
+  ): 'strengthXp' | 'agilityXp' | 'enduranceXp' | 'intelligenceXp' | 'spiritXp' | 'vitalityXp' {
+    const map: Record<StatName, 'strengthXp' | 'agilityXp' | 'enduranceXp' | 'intelligenceXp' | 'spiritXp' | 'vitalityXp'> = {
+      [StatName.STRENGTH]:     'strengthXp',
+      [StatName.AGILITY]:      'agilityXp',
+      [StatName.ENDURANCE]:    'enduranceXp',
+      [StatName.INTELLIGENCE]: 'intelligenceXp',
+      [StatName.SPIRIT]:       'spiritXp',
+      [StatName.VITALITY]:     'vitalityXp',
     };
     return map[stat];
   }
