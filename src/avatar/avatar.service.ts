@@ -64,55 +64,57 @@ export class AvatarService {
 
   computeHeroClass(avatar: Avatar): string {
     const stats: Record<StatName, number> = {
-      [StatName.STRENGTH]: avatar.strength,
-      [StatName.AGILITY]: avatar.agility,
-      [StatName.ENDURANCE]: avatar.endurance,
+      [StatName.STRENGTH]:     avatar.strength,
+      [StatName.AGILITY]:      avatar.agility,
+      [StatName.ENDURANCE]:    avatar.endurance,
       [StatName.INTELLIGENCE]: avatar.intelligence,
-      [StatName.SPIRIT]: avatar.spirit,
-      [StatName.VITALITY]: avatar.vitality,
+      [StatName.SPIRIT]:       avatar.spirit,
+      [StatName.VITALITY]:     avatar.vitality,
     };
 
     const max = Math.max(...Object.values(stats));
     if (max === 0) return 'Aventurier';
 
-    const dominant = (Object.keys(stats) as StatName[]).filter(
-      (k) => stats[k] === max,
-    );
+    const classMap: Record<StatName, string> = {
+      [StatName.STRENGTH]:     'Guerrier',
+      [StatName.AGILITY]:      'Voleur',
+      [StatName.ENDURANCE]:    'Tank',
+      [StatName.INTELLIGENCE]: 'Mage',
+      [StatName.SPIRIT]:       'Prêtre',
+      [StatName.VITALITY]:     'Paladin',
+    };
 
-    if (dominant.length === 1) {
-      const classMap: Record<StatName, string> = {
-        [StatName.STRENGTH]: 'Guerrier',
-        [StatName.AGILITY]: 'Voleur',
-        [StatName.ENDURANCE]: 'Tank',
-        [StatName.INTELLIGENCE]: 'Mage',
-        [StatName.SPIRIT]: 'Prêtre',
-        [StatName.VITALITY]: 'Paladin',
-      };
-      return classMap[dominant[0]];
+    const comboMap: Record<string, string> = {
+      [`${StatName.AGILITY}+${StatName.STRENGTH}`]:       'Berserker',
+      [`${StatName.INTELLIGENCE}+${StatName.STRENGTH}`]:  'Mage de guerre',
+      [`${StatName.ENDURANCE}+${StatName.SPIRIT}`]:       'Druide',
+      [`${StatName.INTELLIGENCE}+${StatName.SPIRIT}`]:    'Sage lettré',
+      [`${StatName.ENDURANCE}+${StatName.STRENGTH}`]:     'Chevalier',
+      [`${StatName.SPIRIT}+${StatName.STRENGTH}`]:        'Templier',
+      [`${StatName.STRENGTH}+${StatName.VITALITY}`]:      'Champion',
+      [`${StatName.AGILITY}+${StatName.ENDURANCE}`]:      'Rôdeur',
+      [`${StatName.AGILITY}+${StatName.INTELLIGENCE}`]:   'Illusionniste',
+      [`${StatName.AGILITY}+${StatName.SPIRIT}`]:         'Moine',
+      [`${StatName.AGILITY}+${StatName.VITALITY}`]:       'Danseur de lame',
+      [`${StatName.ENDURANCE}+${StatName.INTELLIGENCE}`]: 'Alchimiste',
+      [`${StatName.ENDURANCE}+${StatName.VITALITY}`]:     'Colosse',
+      [`${StatName.INTELLIGENCE}+${StatName.VITALITY}`]:  'Nécromant',
+      [`${StatName.SPIRIT}+${StatName.VITALITY}`]:        'Chaman',
+    };
+
+    // Classe hybride : deux stats à moins de 15 pts l'une de l'autre → combo possible
+    const THRESHOLD = 15;
+    const nearMax = (Object.keys(stats) as StatName[])
+      .filter(k => stats[k] >= max - THRESHOLD)
+      .sort((a, b) => stats[b] - stats[a]);
+
+    if (nearMax.length >= 2) {
+      const pair = [nearMax[0], nearMax[1]].sort().join('+');
+      if (comboMap[pair]) return comboMap[pair];
     }
 
-    if (dominant.length === 2) {
-      const pair = [...dominant].sort().join('+');
-      const comboMap: Record<string, string> = {
-        [`${StatName.AGILITY}+${StatName.STRENGTH}`]:      'Berserker',
-        [`${StatName.INTELLIGENCE}+${StatName.STRENGTH}`]: 'Mage de guerre',
-        [`${StatName.ENDURANCE}+${StatName.SPIRIT}`]:      'Druide',
-        [`${StatName.INTELLIGENCE}+${StatName.SPIRIT}`]:   'Sage lettré',
-        [`${StatName.ENDURANCE}+${StatName.STRENGTH}`]:    'Chevalier',
-        [`${StatName.SPIRIT}+${StatName.STRENGTH}`]:       'Templier',
-        [`${StatName.STRENGTH}+${StatName.VITALITY}`]:     'Champion',
-        [`${StatName.AGILITY}+${StatName.ENDURANCE}`]:     'Rôdeur',
-        [`${StatName.AGILITY}+${StatName.INTELLIGENCE}`]:  'Illusionniste',
-        [`${StatName.AGILITY}+${StatName.SPIRIT}`]:        'Moine',
-        [`${StatName.AGILITY}+${StatName.VITALITY}`]:      'Danseur de lame',
-        [`${StatName.ENDURANCE}+${StatName.INTELLIGENCE}`]:'Alchimiste',
-        [`${StatName.ENDURANCE}+${StatName.VITALITY}`]:    'Colosse',
-        [`${StatName.INTELLIGENCE}+${StatName.VITALITY}`]: 'Nécromant',
-        [`${StatName.SPIRIT}+${StatName.VITALITY}`]:       'Chaman',
-      };
-      return comboMap[pair] ?? 'Aventurier';
-    }
-    return 'Aventurier';
+    // Classe simple : stat dominante
+    return classMap[nearMax[0]] ?? 'Aventurier';
   }
 
   // Appelé par ActivitiesService après chaque déclaration d'activité
