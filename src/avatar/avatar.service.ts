@@ -127,17 +127,26 @@ export class AvatarService {
     const avatar = await this.findByUserId(userId);
 
     // Répartition XP : 70% statPrimary, 30% statSecondary
+    // Le gain est ajouté au XP cumulé de la stat, puis reconverti en points via la courbe logarithmique
     if (statPrimary) {
-      const primary = Math.round(xpGained * 0.7);
-      const secondary = statSecondary ? xpGained - primary : 0;
-      avatar[this.statToField(statPrimary)] = Math.min(avatar[this.statToField(statPrimary)] + primary, 100);
+      const primaryXp   = Math.round(xpGained * 0.7);
+      const secondaryXp = statSecondary ? xpGained - primaryXp : 0;
+
+      const primaryField   = this.statToField(statPrimary);
+      const primaryXpField = this.statToXpField(statPrimary);
+      avatar[primaryXpField] += primaryXp;
+      avatar[primaryField]    = this.xpToStat(avatar[primaryXpField]);
+
       if (statSecondary) {
-        avatar[this.statToField(statSecondary)] = Math.min(avatar[this.statToField(statSecondary)] + secondary, 100);
+        const secondaryField   = this.statToField(statSecondary);
+        const secondaryXpField = this.statToXpField(statSecondary);
+        avatar[secondaryXpField] += secondaryXp;
+        avatar[secondaryField]    = this.xpToStat(avatar[secondaryXpField]);
       }
     }
 
-    avatar.xp += xpGained;
-    avatar.level = this.computeLevel(avatar.xp);
+    avatar.xp    += xpGained;
+    avatar.level  = this.computeLevel(avatar.xp);
     avatar.heroClass = this.computeHeroClass(avatar);
 
     return this.avatarRepository.save(avatar);
