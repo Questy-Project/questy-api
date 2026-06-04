@@ -12,6 +12,35 @@ export class AvatarService {
     private readonly avatarRepository: Repository<Avatar>,
   ) {}
 
+  // Constantes de calibration — stat = A × ln(B × xpCumulé + 1)
+  // Calibration : 2h intense/jour × 30 jours → 100 pts | 30 min légère × 24 jours actifs → ~50 pts
+  private readonly STAT_CURVE_A = 23;
+  private readonly STAT_CURVE_B = 0.015;
+
+  // Convertit un XP cumulé en points de stat affichés (plafond 100)
+  private xpToStat(xpCumule: number): number {
+    return Math.min(
+      Math.round(this.STAT_CURVE_A * Math.log(this.STAT_CURVE_B * xpCumule + 1)),
+      100,
+    );
+  }
+
+  // Formule inverse : convertit des points de stat en XP cumulé équivalent
+  // Utilisé par le reset mensuel pour repositionner le joueur sur la courbe
+  public statBaseToXp(statBase: number): number {
+    if (statBase === 0) return 0;
+    return (Math.exp(statBase / this.STAT_CURVE_A) - 1) / this.STAT_CURVE_B;
+  }
+
+  // Calcule le socle de fidélité à appliquer au début du mois suivant
+  // Récompense les joueurs assidus : <50→0, ≥50→5, ≥75→12, =100→20
+  public computeStatBase(stat: number): number {
+    if (stat >= 100) return 20;
+    if (stat >= 75)  return 12;
+    if (stat >= 50)  return 5;
+    return 0;
+  }
+
   async findByUserId(userId: string): Promise<Avatar> {
     const avatar = await this.avatarRepository.findOne({ where: { userId } });
     if (!avatar) throw new NotFoundException('Avatar introuvable');
@@ -35,55 +64,57 @@ export class AvatarService {
 
   computeHeroClass(avatar: Avatar): string {
     const stats: Record<StatName, number> = {
-      [StatName.STRENGTH]: avatar.strength,
-      [StatName.AGILITY]: avatar.agility,
-      [StatName.ENDURANCE]: avatar.endurance,
+      [StatName.STRENGTH]:     avatar.strength,
+      [StatName.AGILITY]:      avatar.agility,
+      [StatName.ENDURANCE]:    avatar.endurance,
       [StatName.INTELLIGENCE]: avatar.intelligence,
-      [StatName.SPIRIT]: avatar.spirit,
-      [StatName.VITALITY]: avatar.vitality,
+      [StatName.SPIRIT]:       avatar.spirit,
+      [StatName.VITALITY]:     avatar.vitality,
     };
 
     const max = Math.max(...Object.values(stats));
     if (max === 0) return 'Aventurier';
 
-    const dominant = (Object.keys(stats) as StatName[]).filter(
-      (k) => stats[k] === max,
-    );
+    const classMap: Record<StatName, string> = {
+      [StatName.STRENGTH]:     'Guerrier',
+      [StatName.AGILITY]:      'Voleur',
+      [StatName.ENDURANCE]:    'Tank',
+      [StatName.INTELLIGENCE]: 'Mage',
+      [StatName.SPIRIT]:       'Prêtre',
+      [StatName.VITALITY]:     'Paladin',
+    };
 
-    if (dominant.length === 1) {
-      const classMap: Record<StatName, string> = {
-        [StatName.STRENGTH]: 'Guerrier',
-        [StatName.AGILITY]: 'Voleur',
-        [StatName.ENDURANCE]: 'Tank',
-        [StatName.INTELLIGENCE]: 'Mage',
-        [StatName.SPIRIT]: 'Prêtre',
-        [StatName.VITALITY]: 'Paladin',
-      };
-      return classMap[dominant[0]];
+    const comboMap: Record<string, string> = {
+      [`${StatName.AGILITY}+${StatName.STRENGTH}`]:       'Berserker',
+      [`${StatName.INTELLIGENCE}+${StatName.STRENGTH}`]:  'Mage de guerre',
+      [`${StatName.ENDURANCE}+${StatName.SPIRIT}`]:       'Druide',
+      [`${StatName.INTELLIGENCE}+${StatName.SPIRIT}`]:    'Sage lettré',
+      [`${StatName.ENDURANCE}+${StatName.STRENGTH}`]:     'Chevalier',
+      [`${StatName.SPIRIT}+${StatName.STRENGTH}`]:        'Templier',
+      [`${StatName.STRENGTH}+${StatName.VITALITY}`]:      'Champion',
+      [`${StatName.AGILITY}+${StatName.ENDURANCE}`]:      'Rôdeur',
+      [`${StatName.AGILITY}+${StatName.INTELLIGENCE}`]:   'Illusionniste',
+      [`${StatName.AGILITY}+${StatName.SPIRIT}`]:         'Moine',
+      [`${StatName.AGILITY}+${StatName.VITALITY}`]:       'Danseur de lame',
+      [`${StatName.ENDURANCE}+${StatName.INTELLIGENCE}`]: 'Alchimiste',
+      [`${StatName.ENDURANCE}+${StatName.VITALITY}`]:     'Colosse',
+      [`${StatName.INTELLIGENCE}+${StatName.VITALITY}`]:  'Nécromant',
+      [`${StatName.SPIRIT}+${StatName.VITALITY}`]:        'Chaman',
+    };
+
+    // Classe hybride : deux stats à moins de 15 pts l'une de l'autre → combo possible
+    const THRESHOLD = 15;
+    const nearMax = (Object.keys(stats) as StatName[])
+      .filter(k => stats[k] >= max - THRESHOLD)
+      .sort((a, b) => stats[b] - stats[a]);
+
+    if (nearMax.length >= 2) {
+      const pair = [nearMax[0], nearMax[1]].sort().join('+');
+      if (comboMap[pair]) return comboMap[pair];
     }
 
-    if (dominant.length === 2) {
-      const pair = [...dominant].sort().join('+');
-      const comboMap: Record<string, string> = {
-        [`${StatName.AGILITY}+${StatName.STRENGTH}`]:      'Berserker',
-        [`${StatName.INTELLIGENCE}+${StatName.STRENGTH}`]: 'Mage de guerre',
-        [`${StatName.ENDURANCE}+${StatName.SPIRIT}`]:      'Druide',
-        [`${StatName.INTELLIGENCE}+${StatName.SPIRIT}`]:   'Sage lettré',
-        [`${StatName.ENDURANCE}+${StatName.STRENGTH}`]:    'Chevalier',
-        [`${StatName.SPIRIT}+${StatName.STRENGTH}`]:       'Templier',
-        [`${StatName.STRENGTH}+${StatName.VITALITY}`]:     'Champion',
-        [`${StatName.AGILITY}+${StatName.ENDURANCE}`]:     'Rôdeur',
-        [`${StatName.AGILITY}+${StatName.INTELLIGENCE}`]:  'Illusionniste',
-        [`${StatName.AGILITY}+${StatName.SPIRIT}`]:        'Moine',
-        [`${StatName.AGILITY}+${StatName.VITALITY}`]:      'Danseur de lame',
-        [`${StatName.ENDURANCE}+${StatName.INTELLIGENCE}`]:'Alchimiste',
-        [`${StatName.ENDURANCE}+${StatName.VITALITY}`]:    'Colosse',
-        [`${StatName.INTELLIGENCE}+${StatName.VITALITY}`]: 'Nécromant',
-        [`${StatName.SPIRIT}+${StatName.VITALITY}`]:       'Chaman',
-      };
-      return comboMap[pair] ?? 'Aventurier';
-    }
-    return 'Aventurier';
+    // Classe simple : stat dominante
+    return classMap[nearMax[0]] ?? 'Aventurier';
   }
 
   // Appelé par ActivitiesService après chaque déclaration d'activité
@@ -96,17 +127,26 @@ export class AvatarService {
     const avatar = await this.findByUserId(userId);
 
     // Répartition XP : 70% statPrimary, 30% statSecondary
+    // Le gain est ajouté au XP cumulé de la stat, puis reconverti en points via la courbe logarithmique
     if (statPrimary) {
-      const primary = Math.round(xpGained * 0.7);
-      const secondary = statSecondary ? xpGained - primary : 0;
-      avatar[this.statToField(statPrimary)] = Math.min(avatar[this.statToField(statPrimary)] + primary, 100);
+      const primaryXp   = Math.round(xpGained * 0.7);
+      const secondaryXp = statSecondary ? xpGained - primaryXp : 0;
+
+      const primaryField   = this.statToField(statPrimary);
+      const primaryXpField = this.statToXpField(statPrimary);
+      avatar[primaryXpField] += primaryXp;
+      avatar[primaryField]    = this.xpToStat(avatar[primaryXpField]);
+
       if (statSecondary) {
-        avatar[this.statToField(statSecondary)] = Math.min(avatar[this.statToField(statSecondary)] + secondary, 100);
+        const secondaryField   = this.statToField(statSecondary);
+        const secondaryXpField = this.statToXpField(statSecondary);
+        avatar[secondaryXpField] += secondaryXp;
+        avatar[secondaryField]    = this.xpToStat(avatar[secondaryXpField]);
       }
     }
 
-    avatar.xp += xpGained;
-    avatar.level = this.computeLevel(avatar.xp);
+    avatar.xp    += xpGained;
+    avatar.level  = this.computeLevel(avatar.xp);
     avatar.heroClass = this.computeHeroClass(avatar);
 
     return this.avatarRepository.save(avatar);
@@ -137,6 +177,21 @@ export class AvatarService {
       [StatName.INTELLIGENCE]: 'intelligence',
       [StatName.SPIRIT]: 'spirit',
       [StatName.VITALITY]: 'vitality',
+    };
+    return map[stat];
+  }
+
+  // Convertit un StatName en nom de colonne XP correspondante
+  private statToXpField(
+    stat: StatName,
+  ): 'strengthXp' | 'agilityXp' | 'enduranceXp' | 'intelligenceXp' | 'spiritXp' | 'vitalityXp' {
+    const map: Record<StatName, 'strengthXp' | 'agilityXp' | 'enduranceXp' | 'intelligenceXp' | 'spiritXp' | 'vitalityXp'> = {
+      [StatName.STRENGTH]:     'strengthXp',
+      [StatName.AGILITY]:      'agilityXp',
+      [StatName.ENDURANCE]:    'enduranceXp',
+      [StatName.INTELLIGENCE]: 'intelligenceXp',
+      [StatName.SPIRIT]:       'spiritXp',
+      [StatName.VITALITY]:     'vitalityXp',
     };
     return map[stat];
   }
