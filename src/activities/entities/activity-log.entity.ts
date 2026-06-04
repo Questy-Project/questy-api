@@ -38,6 +38,6 @@ export class ActivityLog{
     @Column()
     partsUnlocked!: number;
 
-    @CreateDateColumn()
+    @CreateDateColumn({ type: 'timestamptz' })
     loggedAt!: Date;
 }
