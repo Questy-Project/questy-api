@@ -42,6 +42,26 @@ export class Avatar {
   @Column({ default: 0 })
   vitality!: number;
 
+  // XP cumulés par stat — source de vérité pour la courbe logarithmique
+  // Les colonnes strength/agility/etc. sont calculées depuis ces valeurs
+  @Column({ type: 'float', default: 0 })
+  strengthXp!: number;
+
+  @Column({ type: 'float', default: 0 })
+  agilityXp!: number;
+
+  @Column({ type: 'float', default: 0 })
+  enduranceXp!: number;
+
+  @Column({ type: 'float', default: 0 })
+  intelligenceXp!: number;
+
+  @Column({ type: 'float', default: 0 })
+  spiritXp!: number;
+
+  @Column({ type: 'float', default: 0 })
+  vitalityXp!: number;
+
   // Silhouette A (corps masc.) ou B (corps fém.)
   @Column({ default: 'A' })
   silhouette!: string;
