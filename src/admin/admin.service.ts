@@ -1,17 +1,20 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AvatarScheduler } from '../avatar/avatar.scheduler';
 import { PartsService } from '../parts/parts.service';
+import { AvatarService } from '../avatar/avatar.service';
 import { User } from '../users/entities/user.entity';
 import { Avatar } from '../avatar/entities/avatar.entity';
 import { Part } from '../parts/entities/parts.entity';
+import { PatchStatsDto } from './dto/patch-stats.dto';
 
 @Injectable()
 export class AdminService {
   constructor(
     private readonly avatarScheduler: AvatarScheduler,
     private readonly partsService: PartsService,
+    private readonly avatarService: AvatarService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Avatar)
@@ -58,5 +61,21 @@ export class AdminService {
     }
 
     return result;
+  }
+
+  async patchStats(userId: string, dto: PatchStatsDto): Promise<Avatar> {
+    const avatar = await this.avatarRepository.findOne({ where: { userId } });
+    if (!avatar) throw new NotFoundException('Avatar introuvable');
+
+    if (dto.strengthXp     !== undefined) { avatar.strengthXp     = dto.strengthXp;     avatar.strength     = this.avatarService.xpToStat(dto.strengthXp);     }
+    if (dto.agilityXp      !== undefined) { avatar.agilityXp      = dto.agilityXp;      avatar.agility      = this.avatarService.xpToStat(dto.agilityXp);      }
+    if (dto.enduranceXp    !== undefined) { avatar.enduranceXp    = dto.enduranceXp;    avatar.endurance    = this.avatarService.xpToStat(dto.enduranceXp);    }
+    if (dto.intelligenceXp !== undefined) { avatar.intelligenceXp = dto.intelligenceXp; avatar.intelligence = this.avatarService.xpToStat(dto.intelligenceXp); }
+    if (dto.spiritXp       !== undefined) { avatar.spiritXp       = dto.spiritXp;       avatar.spirit       = this.avatarService.xpToStat(dto.spiritXp);       }
+    if (dto.vitalityXp     !== undefined) { avatar.vitalityXp     = dto.vitalityXp;     avatar.vitality     = this.avatarService.xpToStat(dto.vitalityXp);     }
+
+    avatar.heroClass = this.avatarService.computeHeroClass(avatar);
+
+    return this.avatarRepository.save(avatar);
   }
 }
