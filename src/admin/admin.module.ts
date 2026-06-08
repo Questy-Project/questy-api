@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
+import { AdminSeeder } from './admin.seeder';
 import { AvatarModule } from '../avatar/avatar.module';
 import { PartsModule } from '../parts/parts.module';
 import { User } from '../users/entities/user.entity';
@@ -15,6 +16,6 @@ import { Part } from '../parts/entities/parts.entity';
     PartsModule,
   ],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [AdminService, AdminSeeder],
 })
 export class AdminModule {}
