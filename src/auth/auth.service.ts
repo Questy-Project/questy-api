@@ -48,7 +48,7 @@ export class AuthService {
     await this.partsRepository.save(this.partsRepository.create({userId: user.id}));
 
     return {
-      access_token: this.jwtService.sign({ sub: user.id, email: user.email }),
+      access_token: this.jwtService.sign({ sub: user.id, email: user.email, role: user.role }),
     };
   }
 
@@ -60,7 +60,7 @@ export class AuthService {
     if (!valid) throw new UnauthorizedException('Identifiants incorrects');
 
     return {
-      access_token: this.jwtService.sign({ sub: user.id, email: user.email }),
+      access_token: this.jwtService.sign({ sub: user.id, email: user.email, role: user.role }),
     };
   }
 }
