@@ -36,7 +36,7 @@ export class AdminService {
 
   async getUsers() {
     const users = await this.userRepository.find();
-    const result = [];
+    const result: Array<Record<string, unknown>> = [];
 
     for (const user of users) {
       const avatar = await this.avatarRepository.findOne({ where: { userId: user.id } });
@@ -76,6 +76,12 @@ export class AdminService {
     if (dto.vitalityXp     !== undefined) { avatar.vitalityXp     = dto.vitalityXp;     avatar.vitality     = this.avatarService.xpToStat(dto.vitalityXp);     }
 
     avatar.heroClass = this.avatarService.computeHeroClass(avatar);
+
+    avatar.xp = Math.round(
+      avatar.strengthXp + avatar.agilityXp + avatar.enduranceXp +
+      avatar.intelligenceXp + avatar.spiritXp + avatar.vitalityXp
+    );
+    avatar.level = this.avatarService.computeLevel(avatar.xp);
 
     return this.avatarRepository.save(avatar);
   }

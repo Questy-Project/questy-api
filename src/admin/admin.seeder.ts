@@ -19,6 +19,7 @@ export class AdminSeeder implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    if (process.env.NODE_ENV === 'production') return;
     await this.seedAdmin();
     await this.seedNormalUser();
   }
