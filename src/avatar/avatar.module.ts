@@ -9,6 +9,6 @@ import { AvatarScheduler } from './avatar.scheduler';
   imports: [TypeOrmModule.forFeature([Avatar])],
   controllers: [AvatarController],
   providers: [AvatarService, AvatarScheduler],
-  exports: [AvatarService],
+  exports: [AvatarService, AvatarScheduler],
 })
 export class AvatarModule {}
