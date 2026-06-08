@@ -18,7 +18,7 @@ export class AvatarService {
   private readonly STAT_CURVE_B = 0.015;
 
   // Convertit un XP cumulé en points de stat affichés (plafond 100)
-  private xpToStat(xpCumule: number): number {
+  public xpToStat(xpCumule: number): number {
     return Math.min(
       Math.round(this.STAT_CURVE_A * Math.log(this.STAT_CURVE_B * xpCumule + 1)),
       100,
