@@ -8,6 +8,7 @@ import { User } from '../users/entities/user.entity';
 import { Avatar } from '../avatar/entities/avatar.entity';
 import { Part } from '../parts/entities/parts.entity';
 import { PatchStatsDto } from './dto/patch-stats.dto';
+import { PatchPartsDto } from './dto/patch-parts.dto';
 
 @Injectable()
 export class AdminService {
@@ -77,5 +78,38 @@ export class AdminService {
     avatar.heroClass = this.avatarService.computeHeroClass(avatar);
 
     return this.avatarRepository.save(avatar);
+  }
+
+  async patchParts(userId: string, dto: PatchPartsDto): Promise<Part> {
+    const parts = await this.partRepository.findOne({ where: { userId } });
+    if (!parts) throw new NotFoundException('Stock de parties introuvable');
+
+    parts.stock = dto.stock;
+    return this.partRepository.save(parts);
+  }
+
+  async resetUser(userId: string): Promise<{ message: string }> {
+    const avatar = await this.avatarRepository.findOne({ where: { userId } });
+    const parts  = await this.partRepository.findOne({ where: { userId } });
+
+    if (!avatar) throw new NotFoundException('Avatar introuvable');
+    if (!parts)  throw new NotFoundException('Stock de parties introuvable');
+
+    avatar.level        = 1;
+    avatar.xp           = 0;
+    avatar.heroClass    = 'Aventurier';
+    avatar.strength     = 0;  avatar.strengthXp     = 0;
+    avatar.agility      = 0;  avatar.agilityXp      = 0;
+    avatar.endurance    = 0;  avatar.enduranceXp    = 0;
+    avatar.intelligence = 0;  avatar.intelligenceXp = 0;
+    avatar.spirit       = 0;  avatar.spiritXp       = 0;
+    avatar.vitality     = 0;  avatar.vitalityXp     = 0;
+
+    parts.stock = 0;
+
+    await this.avatarRepository.save(avatar);
+    await this.partRepository.save(parts);
+
+    return { message: 'Utilisateur réinitialisé' };
   }
 }
