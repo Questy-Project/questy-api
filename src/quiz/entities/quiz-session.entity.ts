@@ -22,6 +22,12 @@ export class QuizSession {
   @Column()
   activityName!: string;
 
+  @Column({ nullable: true })
+  activityId!: string;
+
+  @Column({ nullable: true })
+  duration!: number;
+
   @Column({ type: 'jsonb', default: '[]' })
   history!: GeminiMessage[];
 

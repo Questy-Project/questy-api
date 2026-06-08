@@ -12,11 +12,18 @@ import { StartQuizDto } from './dto/start-quiz.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { AvatarService } from '../avatar/avatar.service';
 import { PartsService } from '../parts/parts.service';
+import { ActivitiesService } from '../activities/activities.service';
 import { StatName } from '../common/enums/stat-name.enum';
 
 @Injectable()
 export class QuizService {
   private readonly genAI: GoogleGenerativeAI;
+
+  private readonly difficultyToIntensity: Record<string, number> = {
+    easy: 1,
+    medium: 1.5,
+    hard: 2,
+  };
 
   constructor(
     @InjectRepository(QuizSession)
@@ -24,6 +31,7 @@ export class QuizService {
     private readonly config: ConfigService,
     private readonly avatarService: AvatarService,
     private readonly partsService: PartsService,
+    private readonly activitiesService: ActivitiesService,
   ) {
     this.genAI = new GoogleGenerativeAI(
       this.config.get<string>('GEMINI_API_KEY')!,
@@ -87,6 +95,8 @@ Commence directement par une courte présentation enthousiaste du jeu et pose la
           author: dto.author,
           difficulty: dto.difficulty,
           activityName: dto.activityName,
+          activityId: dto.activityId,
+          duration: dto.duration,
           history: [
             { role: 'user', parts: [{ text: 'Commence le quiz.' }] },
             { role: 'model', parts: [{ text: geminiMessage }] },
@@ -96,7 +106,8 @@ Commence directement par une courte présentation enthousiaste du jeu et pose la
       );
 
       return { sessionId: session.id, message: geminiMessage };
-    } catch {
+    } catch (err) {
+      console.error('[QuizService] Erreur Gemini:', err);
       throw new ServiceUnavailableException(
         'Le quiz est temporairement indisponible. Réessaie plus tard.',
       );
@@ -136,6 +147,17 @@ Commence directement par une courte présentation enthousiaste du jeu et pose la
       const score = parseInt(scoreMatch[1], 10);
       const { xpGained, partsUnlocked } = this.computeRewards(score);
 
+      // Logger l'activité de lecture maintenant que le quiz est terminé
+      if (session.activityId && session.duration) {
+        const intensity = this.difficultyToIntensity[session.difficulty] ?? 1;
+        await this.activitiesService.logActivity(userId, {
+          activityId: session.activityId,
+          duration: session.duration,
+          intensity,
+        });
+      }
+
+      // Bonus XP Intelligence selon le score du quiz
       await this.avatarService.updateAfterActivity(
         userId, xpGained, StatName.INTELLIGENCE, null,
       );
