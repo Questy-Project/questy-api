@@ -103,8 +103,57 @@ Commence directement par une courte présentation enthousiaste du jeu et pose la
     }
   }
 
-  async message(userId: string, dto: SendMessageDto): Promise<unknown> {
-    throw new Error('Not yet implemented');
+  async message(userId: string, dto: SendMessageDto) {
+    const session = await this.quizRepository.findOne({
+      where: { id: dto.sessionId, userId },
+    });
+    if (!session) throw new NotFoundException('Session de quiz introuvable.');
+
+    const systemPrompt = this.buildSystemPrompt(
+      session.title,
+      session.author,
+      session.difficulty,
+      session.activityName,
+    );
+
+    const model = this.genAI.getGenerativeModel({
+      model: 'gemini-1.5-flash',
+      systemInstruction: systemPrompt,
+    });
+
+    const chat = model.startChat({ history: session.history });
+    const result = await chat.sendMessage(dto.message);
+    const geminiResponse = result.response.text();
+
+    session.history = [
+      ...session.history,
+      { role: 'user',  parts: [{ text: dto.message }] },
+      { role: 'model', parts: [{ text: geminiResponse }] },
+    ];
+
+    const scoreMatch = geminiResponse.match(/SCORE_FINAL:\s*(\d+)%/);
+    if (scoreMatch) {
+      const score = parseInt(scoreMatch[1], 10);
+      const { xpGained, partsUnlocked } = this.computeRewards(score);
+
+      await this.avatarService.updateAfterActivity(
+        userId, xpGained, StatName.INTELLIGENCE, null,
+      );
+      if (partsUnlocked > 0) {
+        await this.partsService.addParts(userId, partsUnlocked);
+      }
+
+      session.status        = 'completed';
+      session.score         = score;
+      session.xpGained      = xpGained;
+      session.partsUnlocked = partsUnlocked;
+      await this.quizRepository.save(session);
+
+      return { type: 'score', message: geminiResponse, score, xpGained, partsUnlocked };
+    }
+
+    await this.quizRepository.save(session);
+    return { type: 'message', message: geminiResponse };
   }
 
   private computeRewards(score: number): { xpGained: number; partsUnlocked: number } {
