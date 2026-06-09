@@ -7,6 +7,9 @@ export class StartQuizDto {
   @IsString() @IsNotEmpty()
   author!: string;
 
+  @IsOptional() @IsString()
+  volume?: string;
+
   @IsIn(['easy', 'medium', 'hard'])
   difficulty!: string;
 

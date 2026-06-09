@@ -1,6 +1,6 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-type GeminiMessage = { role: 'user' | 'model'; parts: { text: string }[] };
+type ChatMessage = { role: 'user' | 'assistant' | 'system'; content: string };
 
 @Entity('quiz_sessions')
 export class QuizSession {
@@ -29,7 +29,7 @@ export class QuizSession {
   duration!: number;
 
   @Column({ type: 'jsonb', default: '[]' })
-  history!: GeminiMessage[];
+  history!: ChatMessage[];
 
   @Column({ default: 'pending' })
   status!: string;
