@@ -6,6 +6,7 @@ import { ActivitiesModule } from './activities/activities.module';
 import { AvatarModule } from './avatar/avatar.module';
 import { PartsModule } from './parts/parts.module';
 import { AdminModule } from './admin/admin.module';
+import { QuizModule } from './quiz/quiz.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
 
@@ -37,6 +38,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     AvatarModule,
     PartsModule,
     AdminModule,
+    QuizModule,
   ],
   controllers: [],
   providers: [],
