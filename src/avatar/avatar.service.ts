@@ -196,6 +196,23 @@ export class AvatarService {
     return map[stat];
   }
 
+  // Ajoute +amount directement sur une stat via la courbe XP inverse
+  // Utilisé par le système de défis pour appliquer un bonus mensuel
+  async addStatBonus(userId: string, stat: StatName, amount: number): Promise<void> {
+    const avatar = await this.findByUserId(userId);
+    const xpField  = this.statToXpField(stat);
+    const statField = this.statToField(stat);
+    const currentStat = avatar[statField] as number;
+    if (currentStat >= 100) return;
+    const targetXp = this.statBaseToXp(currentStat + amount);
+    const currentXp = avatar[xpField] as number;
+    const delta = Math.max(targetXp - currentXp, 0);
+    (avatar as any)[xpField]  = currentXp + delta;
+    (avatar as any)[statField] = this.xpToStat((avatar as any)[xpField]);
+    avatar.heroClass = this.computeHeroClass(avatar);
+    await this.avatarRepository.save(avatar);
+  }
+
   async updateCustomization(
     userId: string,
     dto: UpdateAvatarCustomizationDto,

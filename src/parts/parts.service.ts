@@ -24,6 +24,17 @@ export class PartsService {
 
   }
 
+  async getStock(userId: string): Promise<number> {
+    const parts = await this.findByUserId(userId);
+    return parts.stock;
+  }
+
+  async deductParts(userId: string, amount: number): Promise<Part> {
+    const parts = await this.findByUserId(userId);
+    parts.stock = Math.max(parts.stock - amount, 0);
+    return this.partRepository.save(parts);
+  }
+
   // Appelé chaque nuit à minuit — recharge d'1 partie les users éligibles
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async rechargeNightly(): Promise<void> {
