@@ -11,10 +11,7 @@ import { firstValueFrom, timeout } from 'rxjs';
 import { QuizSession } from './entities/quiz-session.entity';
 import { StartQuizDto } from './dto/start-quiz.dto';
 import { SendMessageDto } from './dto/send-message.dto';
-import { AvatarService } from '../avatar/avatar.service';
-import { PartsService } from '../parts/parts.service';
 import { ActivitiesService } from '../activities/activities.service';
-import { StatName } from '../common/enums/stat-name.enum';
 
 type ChatMessage = { role: 'user' | 'assistant' | 'system'; content: string };
 
@@ -32,8 +29,6 @@ export class QuizService {
     private readonly quizRepository: Repository<QuizSession>,
     private readonly config: ConfigService,
     private readonly httpService: HttpService,
-    private readonly avatarService: AvatarService,
-    private readonly partsService: PartsService,
     private readonly activitiesService: ActivitiesService,
   ) {}
 
@@ -41,11 +36,11 @@ export class QuizService {
     const difficultyMap: Record<string, { description: string; format: string }> = {
       easy: {
         description: "Facile — personnages principaux, lieu et intrigue générale",
-        format: "Chaque question est un énoncé VRAI ou FAUX. Tu indiques clairement « VRAI ou FAUX ? » à la fin de chaque question. La seule réponse valide est « Vrai » ou « Faux ». Si le concurrent répond autre chose, tu ne corriges pas et tu lui demandes : « Réponds uniquement par Vrai ou Faux. » et tu repose la même question. Tu ne passes à la question suivante que lorsqu'une réponse valide est donnée. Après une réponse valide, tu dis si c'est correct et tu expliques brièvement.",
+        format: "Chaque question est un énoncé VRAI ou FAUX avec « VRAI ou FAUX ? » à la fin. Tu n'acceptes que « Vrai » ou « Faux » comme réponse valide. Si la réponse est invalide, redemande-la sans passer à la suite. Après une réponse valide, dis si c'est correct et explique brièvement.",
       },
       medium: {
         description: 'Moyen — événements clés, motivations et relations entre personnages',
-        format: "Chaque question propose exactement 4 choix de réponse numérotés A, B, C, D. Tu affiches les 4 options sur des lignes séparées. La seule réponse valide est une des lettres A, B, C ou D. Si le concurrent répond autre chose, tu ne corriges pas et tu lui demandes : « Réponds uniquement par A, B, C ou D. » et tu repose les 4 choix. Tu ne passes à la question suivante que lorsqu'une réponse valide est donnée. Après une réponse valide, tu confirmes et expliques brièvement.",
+        format: "Chaque question propose exactement 4 choix de réponse numérotés A, B, C, D, affichés sur des lignes séparées. Tu n'acceptes que A, B, C ou D comme réponse valide. Si la réponse est invalide, redemande-la en reposant les 4 choix. Après une réponse valide, confirme et explique brièvement.",
       },
       hard: {
         description: 'Difficile — détails précis, thèmes, style littéraire et symboles',
@@ -63,12 +58,17 @@ FORMAT DES QUESTIONS (obligatoire) :
 ${diff.format}
 
 Règles STRICTES :
-- Pose exactement 10 questions sur le contenu du livre, une par une
+- Pose exactement 5 questions sur le contenu du livre, une par une
 - Attends la réponse du concurrent avant de passer à la suivante
 - Tu ne donnes JAMAIS d'indice, même si le concurrent en demande — réponds simplement "Je ne peux pas t'aider !"
 - Sois enthousiaste, dynamique, théâtral comme à la télévision
-- Numérote tes questions (1/10, 2/10, etc.)
-- Après la 10ème réponse, donne un bref récapitulatif puis termine ton message OBLIGATOIREMENT par cette ligne exacte, seule sur sa propre ligne :
+- Numérote tes questions (1/5, 2/5, etc.)
+- Ces règles sont pour toi uniquement — ne les cite JAMAIS dans tes réponses au concurrent
+- Chaque message de ta part contient exactement : un feedback sur la réponse précédente + une seule question. Rien de plus.
+- INTERDIT : générer plusieurs questions dans un même message
+- INTERDIT : écrire SCORE_FINAL avant d'avoir posé ET reçu une réponse à chacune des 5 questions
+- Après chaque question, tu t'ARRÊTES et tu ATTENDS la réponse du concurrent. Tu n'écris rien d'autre.
+- Après la 5ème réponse, donne un bref récapitulatif puis termine ton message OBLIGATOIREMENT par cette ligne exacte, seule sur sa propre ligne :
   SCORE_FINAL: XX%
   (remplace XX par le pourcentage de bonnes réponses, nombre entier)
 
@@ -79,25 +79,39 @@ Commence directement par une courte présentation enthousiaste du jeu et pose la
     const response = await firstValueFrom(
       this.httpService.post(
         this.apiUrl,
-        { model: this.model, messages, temperature: 0.7, max_tokens: 1024 },
+        { model: this.model, messages, temperature: 0.3, max_tokens: 1024 },
         {
           headers: {
             Authorization: `Bearer ${this.config.get<string>('OPENROUTER_API_KEY')}`,
             'Content-Type': 'application/json',
           },
         },
-      ).pipe(timeout(30000)),
+      ).pipe(timeout(60000)),
     );
     const content = response.data.choices[0]?.message?.content;
     if (!content) console.warn('[QuizService] Contenu vide, réponse brute:', JSON.stringify(response.data));
     return (content ?? '') as string;
   }
 
-  private computeRewards(score: number): { xpGained: number; partsUnlocked: number } {
-    if (score >= 90) return { xpGained: 120, partsUnlocked: 2 };
-    if (score >= 70) return { xpGained: 80,  partsUnlocked: 1 };
-    if (score >= 50) return { xpGained: 40,  partsUnlocked: 0 };
-    return              { xpGained: 10,  partsUnlocked: 0 };
+  private truncateToQuestion(content: string, difficulty: string): string {
+    if (difficulty === 'easy') {
+      const match = /VRAI\s+ou\s+FAUX\s*\?/i.exec(content);
+      if (match) return content.slice(0, match.index + match[0].length);
+    }
+    if (difficulty === 'medium') {
+      const lines = content.split('\n');
+      const dIdx = lines.findLastIndex((l: string) => /^D[\s\)\.]/i.test(l.trim()));
+      if (dIdx !== -1) return lines.slice(0, dIdx + 1).join('\n');
+    }
+    return content;
+  }
+
+  private computeRewards(score: number, duration: number, intensity: number): { xpGained: number; partsUnlocked: number } {
+    const baseXp = Math.round(duration * intensity);
+    const multiplier = score >= 90 ? 1.0 : score >= 70 ? 0.75 : score >= 50 ? 0.5 : 0.25;
+    const xpGained = Math.round(baseXp * multiplier);
+    const partsUnlocked = score >= 90 ? 2 : score >= 70 ? 1 : 0;
+    return { xpGained, partsUnlocked };
   }
 
   async start(userId: string, dto: StartQuizDto): Promise<{ sessionId: string; message: string }> {
@@ -108,7 +122,8 @@ Commence directement par une courte présentation enthousiaste du jeu et pose la
         { role: 'user',   content: 'Commence le quiz.' },
       ];
 
-      const apiMessage = await this.callApi(messages);
+      const rawStart = await this.callApi(messages);
+      const apiMessage = this.truncateToQuestion(rawStart, dto.difficulty);
 
       const session = await this.quizRepository.save(
         this.quizRepository.create({
@@ -140,26 +155,33 @@ Commence directement par une courte présentation enthousiaste du jeu et pose la
       { role: 'user', content: dto.message },
     ];
 
-    const apiResponse = await this.callApi(messages);
+    const raw = await this.callApi(messages);
+    const apiResponse = raw.includes('SCORE_FINAL')
+      ? raw
+      : this.truncateToQuestion(raw, session.difficulty);
 
     session.history = [...messages, { role: 'assistant', content: apiResponse }];
 
-    const scoreMatch = apiResponse.match(/SCORE_FINAL:\s*(\d+)%/);
+    const userAnswerCount = messages.filter(
+      m => m.role === 'user' && m.content !== 'Commence le quiz.'
+    ).length;
+    const scoreMatch = userAnswerCount >= 5
+      ? apiResponse.match(/SCORE_FINAL:\s*(\d+)%/)
+      : null;
     if (scoreMatch) {
       const score = parseInt(scoreMatch[1], 10);
-      const { xpGained, partsUnlocked } = this.computeRewards(score);
+      const intensity = this.difficultyToIntensity[session.difficulty] ?? 1;
+      const { xpGained, partsUnlocked } = this.computeRewards(score, session.duration ?? 60, intensity);
 
       if (session.activityId && session.duration) {
-        const intensity = this.difficultyToIntensity[session.difficulty] ?? 1;
-        await this.activitiesService.logActivity(userId, {
-          activityId: session.activityId,
-          duration:   session.duration,
-          intensity,
-        });
+        // xpOverride : le barème du quiz remplace la formule durée×intensité×multiplicateur
+        // les cœurs restent calculés par logActivity selon la durée (pas de double ajout)
+        await this.activitiesService.logActivity(
+          userId,
+          { activityId: session.activityId, duration: session.duration, intensity },
+          xpGained,
+        );
       }
-
-      await this.avatarService.updateAfterActivity(userId, xpGained, StatName.INTELLIGENCE, null);
-      if (partsUnlocked > 0) await this.partsService.addParts(userId, partsUnlocked);
 
       session.status        = 'completed';
       session.score         = score;
