@@ -24,7 +24,7 @@ export class TournamentWeeklyRank {
   @Column({ default: 0 })
   totalPoints!: number;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   placement!: number | null;
 
   @UpdateDateColumn()

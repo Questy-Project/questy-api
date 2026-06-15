@@ -35,13 +35,13 @@ export class TournamentCombat {
   @Column({ default: 0 })
   opponentHpCurrent!: number;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   userHpEnd!: number | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   opponentHpEnd!: number | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   winnerId!: string | null;
 
   @Column({ type: 'jsonb', default: [] })
@@ -50,7 +50,7 @@ export class TournamentCombat {
   @Column({ default: 0 })
   pointsGained!: number;
 
-  @Column({ default: 'in_progress' })
+  @Column({ type: 'varchar', default: 'in_progress' })
   status!: 'in_progress' | 'finished';
 
   @Column()
