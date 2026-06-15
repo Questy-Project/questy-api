@@ -47,6 +47,10 @@ export class AvatarService {
     return avatar;
   }
 
+  async findAll(): Promise<Avatar[]> {
+    return this.avatarRepository.find({ relations: ['user'] });
+  }
+
   // Seuils XP cumulatifs : niveau N nécessite (N-1)*N/2 * 100 XP total
   // L1=0, L2=100, L3=300, L4=600, L5=1000, L10=4500...
   computeLevel(xp: number): number {
