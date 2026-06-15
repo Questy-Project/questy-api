@@ -5,6 +5,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { AdminService } from './admin.service';
 import { PatchStatsDto } from './dto/patch-stats.dto';
 import { PatchPartsDto } from './dto/patch-parts.dto';
+import { PatchRankDto } from './dto/patch-rank.dto';
 import { UserRole } from '../common/enums/user-role.enum';
 
 @Controller('admin')
@@ -36,6 +37,11 @@ export class AdminController {
   @Patch('users/:id/parts')
   patchParts(@Param('id', ParseUUIDPipe) id: string, @Body() dto: PatchPartsDto) {
     return this.adminService.patchParts(id, dto);
+  }
+
+  @Patch('users/:id/rank')
+  patchRank(@Param('id', ParseUUIDPipe) id: string, @Body() dto: PatchRankDto) {
+    return this.adminService.patchRank(id, dto);
   }
 
   @Post('users/:id/reset')
