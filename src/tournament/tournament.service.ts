@@ -231,6 +231,36 @@ export class TournamentService {
     };
   }
 
+  async getCurrentCombat(userId: string) {
+    const { start, end } = this.todayBounds();
+    const combat = await this.combatRepo.findOne({
+      where: { userId, status: 'in_progress', foughtAt: Between(start, end) },
+    });
+    if (!combat) return null;
+
+    const opponents = await this.avatarService.findAll();
+    const opponent  = opponents.find(a => a.userId === combat.opponentId);
+
+    return {
+      combatId:          combat.id,
+      userHp:            combat.userHpStart,
+      opponentHp:        combat.opponentHpStart,
+      userHpCurrent:     combat.userHpCurrent,
+      opponentHpCurrent: combat.opponentHpCurrent,
+      turnsPlayed:       combat.turns.length,
+      opponentPseudo:    opponent?.user?.pseudo ?? 'Inconnu',
+      opponentStats: opponent ? {
+        strength:     opponent.strength,
+        agility:      opponent.agility,
+        endurance:    opponent.endurance,
+        intelligence: opponent.intelligence,
+        spirit:       opponent.spirit,
+        vitality:     opponent.vitality,
+        level:        opponent.level,
+      } : null,
+    };
+  }
+
   async playTurn(userId: string, combatId: string, playerAction: string) {
     const combat = await this.combatRepo.findOne({ where: { id: combatId, userId } });
     if (!combat) throw new NotFoundException('Combat introuvable.');

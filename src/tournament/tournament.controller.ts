@@ -13,6 +13,11 @@ export class TournamentController {
     return this.tournamentService.getStatus(req.user.userId);
   }
 
+  @Get('combat/current')
+  getCurrentCombat(@Request() req: any) {
+    return this.tournamentService.getCurrentCombat(req.user.userId);
+  }
+
   @Post('combat/start')
   startCombat(@Request() req: any) {
     return this.tournamentService.startCombat(req.user.userId);
