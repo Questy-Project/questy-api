@@ -7,8 +7,13 @@ import { AvatarService } from '../avatar/avatar.service';
 import { User } from '../users/entities/user.entity';
 import { Avatar } from '../avatar/entities/avatar.entity';
 import { Part } from '../parts/entities/parts.entity';
+import { MonthlyRank, RankTier } from '../rank/entities/monthly-rank.entity';
+import { TournamentWeeklyRank } from '../tournament/entities/tournament-weekly-rank.entity';
+import { RankService } from '../rank/rank.service';
+import { getIsoWeek } from '../common/utils/week.util';
 import { PatchStatsDto } from './dto/patch-stats.dto';
 import { PatchPartsDto } from './dto/patch-parts.dto';
+import { PatchRankDto } from './dto/patch-rank.dto';
 
 @Injectable()
 export class AdminService {
@@ -22,6 +27,11 @@ export class AdminService {
     private readonly avatarRepository: Repository<Avatar>,
     @InjectRepository(Part)
     private readonly partRepository: Repository<Part>,
+    @InjectRepository(MonthlyRank)
+    private readonly monthlyRankRepository: Repository<MonthlyRank>,
+    @InjectRepository(TournamentWeeklyRank)
+    private readonly weeklyRankRepository: Repository<TournamentWeeklyRank>,
+    private readonly rankService: RankService,
   ) {}
 
   async triggerMonthlyReset(): Promise<{ message: string }> {
@@ -36,16 +46,26 @@ export class AdminService {
 
   async getUsers() {
     const users = await this.userRepository.find();
+    const { month, year } = this.rankService.currentPeriod();
     const result: Array<Record<string, unknown>> = [];
 
     for (const user of users) {
-      const avatar = await this.avatarRepository.findOne({ where: { userId: user.id } });
-      const parts  = await this.partRepository.findOne({ where: { userId: user.id } });
+      const avatar     = await this.avatarRepository.findOne({ where: { userId: user.id } });
+      const parts      = await this.partRepository.findOne({ where: { userId: user.id } });
+      const monthlyRank = await this.monthlyRankRepository.findOne({ where: { userId: user.id, month, year } });
+
+      // Mot de passe affiché uniquement pour les comptes de test (seed + comptes de dev connus)
+      const TEST_ACCOUNTS = ['admin@test.com', 'user@test.com'];
+      const isTestAccount = user.email.endsWith('@questy.seed') || TEST_ACCOUNTS.includes(user.email);
+      const testPassword  = isTestAccount ? 'Password123!' : '***';
+
       result.push({
-        id:     user.id,
-        pseudo: user.pseudo,
-        email:  user.email,
-        role:   user.role,
+        id:           user.id,
+        pseudo:       user.pseudo,
+        email:        user.email,
+        testPassword,
+        role:         user.role,
+        rank: monthlyRank ? { tier: monthlyRank.tier, totalPoints: monthlyRank.totalPoints } : { tier: 'BRONZE', totalPoints: 0 },
         avatar: avatar ? {
           level:        avatar.level,
           xp:           avatar.xp,
@@ -92,6 +112,39 @@ export class AdminService {
 
     parts.stock = dto.stock;
     return this.partRepository.save(parts);
+  }
+
+  async patchRank(userId: string, dto: PatchRankDto): Promise<{ message: string }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Utilisateur introuvable');
+
+    const { month, year } = this.rankService.currentPeriod();
+
+    if (dto.monthlyPoints !== undefined) {
+      let rank = await this.monthlyRankRepository.findOne({ where: { userId, month, year } });
+      if (!rank) {
+        rank = this.monthlyRankRepository.create({ userId, month, year, totalPoints: 0, tier: RankTier.BRONZE, coinsEarned: 0 });
+      }
+      rank.totalPoints = dto.monthlyPoints;
+      await this.monthlyRankRepository.save(rank);
+    }
+
+    if (dto.weeklyPoints !== undefined) {
+      const { weekNumber, year: weekYear } = getIsoWeek();
+
+      let rank = await this.weeklyRankRepository.findOne({ where: { userId, weekNumber, year: weekYear } });
+      if (!rank) {
+        rank = this.weeklyRankRepository.create({ userId, weekNumber, year: weekYear, wins: 0, losses: 0, totalPoints: 0, claimedSlots: 0 });
+      }
+      rank.totalPoints = dto.weeklyPoints;
+      await this.weeklyRankRepository.save(rank);
+    }
+
+    if (dto.monthlyPoints !== undefined) {
+      await this.rankService.recalculateTiers();
+    }
+
+    return { message: 'Points mis à jour' };
   }
 
   async resetUser(userId: string): Promise<{ message: string }> {
