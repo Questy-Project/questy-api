@@ -14,6 +14,21 @@ export class ChallengesController {
     return this.challengesService.getToday(req.user.userId);
   }
 
+  @Post('ia/start')
+  startIA(@Body() dto: StartChallengeDto, @Request() req: any) {
+    return this.challengesService.startIA(req.user.userId, dto);
+  }
+
+  @Post('ia/message')
+  messageIA(@Body() dto: AnswerChallengeDto, @Request() req: any) {
+    return this.challengesService.messageIA(req.user.userId, dto);
+  }
+
+  @Post('ia/abandon')
+  abandonIA(@Body() body: { sessionId: string }, @Request() req: any) {
+    return this.challengesService.abandonIA(req.user.userId, body.sessionId);
+  }
+
   @Post(':id/start')
   startPhysical(@Param('id') id: string, @Request() req: any) {
     return this.challengesService.startPhysical(req.user.userId, id);
@@ -24,13 +39,8 @@ export class ChallengesController {
     return this.challengesService.completePhysical(req.user.userId, id);
   }
 
-  @Post('ia/start')
-  startIA(@Body() dto: StartChallengeDto, @Request() req: any) {
-    return this.challengesService.startIA(req.user.userId, dto);
-  }
-
-  @Post('ia/message')
-  messageIA(@Body() dto: AnswerChallengeDto, @Request() req: any) {
-    return this.challengesService.messageIA(req.user.userId, dto);
+  @Post(':id/abandon')
+  abandonPhysical(@Param('id') id: string, @Request() req: any) {
+    return this.challengesService.abandonPhysical(req.user.userId, id);
   }
 }

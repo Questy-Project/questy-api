@@ -249,6 +249,42 @@ Commence par une brève mise en scène et pose la première énigme (difficile).
     }
   }
 
+  async abandonPhysical(userId: string, challengeId: string) {
+    const challenge = await this.catalogRepo.findOne({ where: { id: challengeId } });
+    if (!challenge) throw new NotFoundException('Défi introuvable.');
+
+    const { start, end } = this.todayBounds();
+    const alreadyLogged = await this.logRepo.count({
+      where: { userId, stat: challenge.stat, loggedAt: Between(start, end) },
+    });
+    if (alreadyLogged > 0) return { ok: true };
+
+    await this.logRepo.save(
+      this.logRepo.create({ userId, challengeId, stat: challenge.stat, success: false }),
+    );
+    return { ok: true };
+  }
+
+  async abandonIA(userId: string, sessionId: string) {
+    const session = await this.sessionRepo.findOne({ where: { id: sessionId, userId } });
+    if (!session) throw new NotFoundException('Session de défi introuvable.');
+    if (session.status !== 'pending') return { ok: true };
+
+    session.status = 'abandoned';
+    await this.sessionRepo.save(session);
+
+    const { start, end } = this.todayBounds();
+    const alreadyLogged = await this.logRepo.count({
+      where: { userId, stat: session.stat, loggedAt: Between(start, end) },
+    });
+    if (alreadyLogged === 0) {
+      await this.logRepo.save(
+        this.logRepo.create({ userId, challengeId: session.challengeId, stat: session.stat, success: false }),
+      );
+    }
+    return { ok: true };
+  }
+
   async messageIA(userId: string, dto: AnswerChallengeDto) {
     const session = await this.sessionRepo.findOne({ where: { id: dto.sessionId, userId } });
     if (!session) throw new NotFoundException('Session de défi introuvable.');
