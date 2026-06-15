@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, Unique } from 'typeorm';
 
 export type TurnLog = {
   turn: number;
@@ -12,6 +12,7 @@ export type TurnLog = {
   opponentHpAfter: number;
 };
 
+@Unique(['userId', 'weekNumber', 'year'])
 @Entity('tournament_combats')
 export class TournamentCombat {
   @PrimaryGeneratedColumn('uuid')
@@ -36,13 +37,13 @@ export class TournamentCombat {
   opponentHpCurrent!: number;
 
   @Column({ nullable: true })
-  userHpEnd!: number;
+  userHpEnd!: number | null;
 
   @Column({ nullable: true })
-  opponentHpEnd!: number;
+  opponentHpEnd!: number | null;
 
   @Column({ nullable: true })
-  winnerId!: string;
+  winnerId!: string | null;
 
   @Column({ type: 'jsonb', default: [] })
   turns!: TurnLog[];
@@ -51,7 +52,7 @@ export class TournamentCombat {
   pointsGained!: number;
 
   @Column({ default: 'in_progress' })
-  status!: string;
+  status!: 'in_progress' | 'finished';
 
   @Column()
   weekNumber!: number;

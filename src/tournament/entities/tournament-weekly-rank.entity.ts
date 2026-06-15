@@ -1,5 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from 'typeorm';
 
+@Unique(['userId', 'weekNumber', 'year'])
 @Entity('tournament_weekly_ranks')
 export class TournamentWeeklyRank {
   @PrimaryGeneratedColumn('uuid')
@@ -24,7 +25,7 @@ export class TournamentWeeklyRank {
   totalPoints!: number;
 
   @Column({ nullable: true })
-  placement!: number;
+  placement!: number | null;
 
   @UpdateDateColumn()
   updatedAt!: Date;
