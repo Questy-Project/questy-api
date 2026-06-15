@@ -190,7 +190,7 @@ export class TournamentService {
     const userAvatar = await this.avatarService.findByUserId(userId);
 
     // Sélection d'un adversaire aléatoire différent du joueur
-    const opponents = await this.avatarService['avatarRepository'].find();
+    const opponents = await this.avatarService.findAll();
     const pool = opponents.filter(a => a.userId !== userId);
     if (pool.length === 0) throw new BadRequestException('Aucun adversaire disponible pour le moment.');
     const opponent = pool[Math.floor(Math.random() * pool.length)];
@@ -218,7 +218,7 @@ export class TournamentService {
       combatId:     combat.id,
       userHp,
       opponentHp,
-      opponentPseudo: (opponent as any).user?.pseudo ?? 'Inconnu',
+      opponentPseudo: opponent.user?.pseudo ?? 'Inconnu',
       opponentStats: {
         strength:     opponent.strength,
         agility:      opponent.agility,
@@ -307,15 +307,12 @@ export class TournamentService {
       where: { weekNumber, year },
       order: { totalPoints: 'DESC' },
     });
-    // Enrichit chaque entrée avec le pseudo via l'avatar
-    const enriched = await Promise.all(
-      ranks.map(async (r) => {
-        const avatars = await this.avatarService.findAll();
-        const avatar  = avatars.find(a => a.userId === r.userId);
-        return { ...r, pseudo: avatar?.user?.pseudo ?? r.userId.slice(0, 8) };
-      }),
-    );
-    return enriched;
+    // Charge tous les avatars en une seule requête pour éviter le N+1
+    const avatars = await this.avatarService.findAll();
+    return ranks.map((r) => {
+      const avatar = avatars.find(a => a.userId === r.userId);
+      return { ...r, pseudo: avatar?.user?.pseudo ?? r.userId.slice(0, 8) };
+    });
   }
 
   // Chaque lundi à 00:00 UTC — calcule les placements de la semaine écoulée
