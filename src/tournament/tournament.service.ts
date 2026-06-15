@@ -9,6 +9,8 @@ import { Cron } from '@nestjs/schedule';
 import { TournamentCombat, TurnLog } from './entities/tournament-combat.entity';
 import { TournamentWeeklyRank } from './entities/tournament-weekly-rank.entity';
 import { AvatarService } from '../avatar/avatar.service';
+import { RankService } from '../rank/rank.service';
+import { getIsoWeek } from '../common/utils/week.util';
 
 type AvatarStats = {
   strength: number;
@@ -40,17 +42,11 @@ export class TournamentService {
     @InjectRepository(TournamentWeeklyRank)
     private readonly rankRepo: Repository<TournamentWeeklyRank>,
     private readonly avatarService: AvatarService,
+    private readonly rankService: RankService,
   ) {}
 
-  // Calcul du numéro de semaine ISO (1–52/53)
-  private getWeekNumber(): { weekNumber: number; year: number } {
-    const d    = new Date();
-    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    const day  = date.getUTCDay() || 7;
-    date.setUTCDate(date.getUTCDate() + 4 - day);
-    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-    const weekNumber = Math.ceil((((date.valueOf() - yearStart.valueOf()) / 86400000) + 1) / 7);
-    return { weekNumber, year: date.getUTCFullYear() };
+  private getWeekNumber(date?: Date): { weekNumber: number; year: number } {
+    return getIsoWeek(date);
   }
 
   private todayBounds(): { start: Date; end: Date } {
@@ -346,6 +342,7 @@ export class TournamentService {
       combat.pointsGained = playerWon ? 30 : 10;
       await this.combatRepo.save(combat);
       await this.updateWeeklyRank(userId, playerWon, combat.pointsGained, combat.weekNumber, combat.year);
+      await this.rankService.addPoints(userId, combat.pointsGained);
     } else {
       await this.combatRepo.save(combat);
     }
@@ -407,12 +404,7 @@ export class TournamentService {
     }
     if (stale.length) await this.combatRepo.save(stale);
 
-    const d    = new Date(Date.UTC(prev.getFullYear(), prev.getMonth(), prev.getDate()));
-    const day  = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - day);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    const weekNumber = Math.ceil((((d.valueOf() - yearStart.valueOf()) / 86400000) + 1) / 7);
-    const year = d.getUTCFullYear();
+    const { weekNumber, year } = this.getWeekNumber(prev);
 
     const ranks = await this.rankRepo.find({
       where: { weekNumber, year },
