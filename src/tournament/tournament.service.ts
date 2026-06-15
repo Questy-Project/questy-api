@@ -251,6 +251,14 @@ export class TournamentService {
         vitality:     opponent.vitality,
         level:        opponent.level,
       },
+      opponentAvatar: {
+        silhouette: opponent.silhouette,
+        skinTone:   opponent.skinTone,
+        hairStyle:  opponent.hairStyle,
+        hairColor:  opponent.hairColor,
+        heroClass:  opponent.heroClass,
+        showHood:   opponent.showHood,
+      },
     };
   }
 
@@ -280,6 +288,14 @@ export class TournamentService {
         spirit:       opponent.spirit,
         vitality:     opponent.vitality,
         level:        opponent.level,
+      } : null,
+      opponentAvatar: opponent ? {
+        silhouette: opponent.silhouette,
+        skinTone:   opponent.skinTone,
+        hairStyle:  opponent.hairStyle,
+        hairColor:  opponent.hairColor,
+        heroClass:  opponent.heroClass,
+        showHood:   opponent.showHood,
       } : null,
     };
   }
