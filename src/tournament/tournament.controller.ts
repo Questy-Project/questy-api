@@ -13,6 +13,11 @@ export class TournamentController {
     return this.tournamentService.getStatus(req.user.userId);
   }
 
+  @Post('claim-slot')
+  claimSlot(@Request() req: any) {
+    return this.tournamentService.claimDailySlot(req.user.userId);
+  }
+
   @Get('combat/current')
   getCurrentCombat(@Request() req: any) {
     return this.tournamentService.getCurrentCombat(req.user.userId);

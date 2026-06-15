@@ -27,6 +27,12 @@ export class TournamentWeeklyRank {
   @Column({ type: 'int', nullable: true })
   placement!: number | null;
 
+  @Column({ default: 0 })
+  claimedSlots!: number;
+
+  @Column({ type: 'varchar', nullable: true })
+  lastClaimDate!: string | null;
+
   @UpdateDateColumn()
   updatedAt!: Date;
 }

@@ -143,6 +143,23 @@ export class TournamentService {
     return 'PHYSICAL_ATTACK';
   }
 
+  // Réclame un slot de combat pour aujourd'hui (1 par jour, max 7/semaine)
+  async claimDailySlot(userId: string): Promise<void> {
+    const { weekNumber, year } = this.getWeekNumber();
+    const today = new Date().toISOString().split('T')[0];
+
+    let rank = await this.rankRepo.findOne({ where: { userId, weekNumber, year } });
+    if (!rank) {
+      rank = this.rankRepo.create({ userId, weekNumber, year, wins: 0, losses: 0, totalPoints: 0, claimedSlots: 0, lastClaimDate: null });
+    }
+    if (rank.lastClaimDate === today) return;
+    if (rank.claimedSlots >= 7) return;
+
+    rank.claimedSlots++;
+    rank.lastClaimDate = today;
+    await this.rankRepo.save(rank);
+  }
+
   async getStatus(userId: string) {
     const { weekNumber, year } = this.getWeekNumber();
     const { start, end }       = this.todayBounds();
@@ -160,11 +177,12 @@ export class TournamentService {
     });
 
     const rank = await this.rankRepo.findOne({ where: { userId, weekNumber, year } });
+    const claimedSlots = rank?.claimedSlots ?? 0;
 
     return {
-      canFightToday: foughtToday === 0,
+      canFightToday: foughtToday === 0 && claimedSlots > weekCombats,
       combatsThisWeek: weekCombats,
-      combatsRemainingThisWeek: Math.max(7 - weekCombats, 0),
+      claimedSlots,
       wins:   rank?.wins   ?? 0,
       losses: rank?.losses ?? 0,
       totalPoints: rank?.totalPoints ?? 0,
@@ -178,6 +196,9 @@ export class TournamentService {
     });
     if (foughtToday > 0) throw new BadRequestException('Tu as déjà combattu aujourd\'hui.');
 
+    const { weekNumber: wn, year: wy } = this.getWeekNumber();
+    const rank = await this.rankRepo.findOne({ where: { userId, weekNumber: wn, year: wy } });
+
     const weekStart = new Date(); weekStart.setHours(0, 0, 0, 0);
     weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
     const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6); weekEnd.setHours(23, 59, 59, 999);
@@ -185,7 +206,9 @@ export class TournamentService {
     const weekCombats = await this.combatRepo.count({
       where: { userId, foughtAt: Between(weekStart, weekEnd) },
     });
-    if (weekCombats >= 7) throw new BadRequestException('Tu as atteint le maximum de 7 combats cette semaine.');
+    if (!rank || rank.claimedSlots <= weekCombats) {
+      throw new BadRequestException('Aucune unité de combat disponible. Reviens demain pour en gagner une nouvelle.');
+    }
 
     const userAvatar = await this.avatarService.findByUserId(userId);
 
@@ -345,12 +368,28 @@ export class TournamentService {
     });
   }
 
-  // Chaque lundi à 00:00 UTC — calcule les placements de la semaine écoulée
+  // Chaque lundi à 00:00 UTC — annule les combats in_progress non terminés puis calcule les placements
   @Cron('0 0 * * 1')
   async closeWeek() {
     const now  = new Date();
     const prev = new Date(now);
     prev.setDate(prev.getDate() - 7);
+
+    // Annulation des combats in_progress de la semaine écoulée (forfait sans points)
+    const prevStart = new Date(prev); prevStart.setHours(0, 0, 0, 0);
+    prevStart.setDate(prevStart.getDate() - ((prevStart.getDay() + 6) % 7));
+    const prevEnd = new Date(prevStart); prevEnd.setDate(prevEnd.getDate() + 6); prevEnd.setHours(23, 59, 59, 999);
+
+    const stale = await this.combatRepo.find({
+      where: { status: 'in_progress', foughtAt: Between(prevStart, prevEnd) },
+    });
+    for (const c of stale) {
+      c.status      = 'finished';
+      c.winnerId    = c.opponentId;
+      c.userHpEnd   = 0;
+      c.opponentHpEnd = c.opponentHpCurrent;
+    }
+    if (stale.length) await this.combatRepo.save(stale);
 
     const d    = new Date(Date.UTC(prev.getFullYear(), prev.getMonth(), prev.getDate()));
     const day  = d.getUTCDay() || 7;
