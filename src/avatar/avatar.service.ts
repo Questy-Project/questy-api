@@ -217,6 +217,24 @@ export class AvatarService {
     await this.avatarRepository.save(avatar);
   }
 
+  // Remet les 6 stats au socle de fidélité du mois précédent (appelé par le cron mensuel de RankService)
+  async resetMonthlyStats(userId: string): Promise<void> {
+    const avatar = await this.findByUserId(userId);
+    const statNames: StatName[] = [
+      StatName.STRENGTH, StatName.AGILITY, StatName.ENDURANCE,
+      StatName.INTELLIGENCE, StatName.SPIRIT, StatName.VITALITY,
+    ];
+    for (const stat of statNames) {
+      const field    = this.statToField(stat);
+      const xpField  = this.statToXpField(stat);
+      const base     = this.computeStatBase(avatar[field] as number);
+      (avatar as any)[xpField] = this.statBaseToXp(base);
+      (avatar as any)[field]   = base;
+    }
+    avatar.heroClass = this.computeHeroClass(avatar);
+    await this.avatarRepository.save(avatar);
+  }
+
   async updateCustomization(
     userId: string,
     dto: UpdateAvatarCustomizationDto,

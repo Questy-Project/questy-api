@@ -9,6 +9,7 @@ import { AdminModule } from './admin/admin.module';
 import { QuizModule } from './quiz/quiz.module';
 import { ChallengesModule } from './challenges/challenges.module';
 import { TournamentModule } from './tournament/tournament.module';
+import { RankModule } from './rank/rank.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
 
@@ -43,6 +44,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     QuizModule,
     ChallengesModule,
     TournamentModule,
+    RankModule,
   ],
   controllers: [],
   providers: [],
