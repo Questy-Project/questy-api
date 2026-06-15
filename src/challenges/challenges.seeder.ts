@@ -52,17 +52,17 @@ export class ChallengesSeeder implements OnModuleInit {
       { stat: StatName.ENDURANCE, type: ChallengeType.TIMED, title: 'Superman (60s)',               description: 'Allongé sur le ventre, lève bras et jambes simultanément et maintiens.',          targetSeconds: 60,  weekSlot: 8 },
       { stat: StatName.ENDURANCE, type: ChallengeType.TIMED, title: 'Squat isométrique (90s)',      description: 'Cuisses à 90° sans appui mural, maintiens pendant 90 secondes.',                  targetSeconds: 90,  weekSlot: 9 },
 
-      // INTELLIGENCE — quiz IA (10)
-      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Géographie',        description: '10 questions sur la géographie mondiale.',                                          weekSlot: 0 },
-      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Histoire',          description: '10 questions sur les grands événements historiques.',                             weekSlot: 1 },
-      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Sciences',          description: '10 questions sur les sciences naturelles et physiques.',                          weekSlot: 2 },
-      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Art & Culture',     description: '10 questions sur l\'art, la musique et la culture mondiale.',                     weekSlot: 3 },
-      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Sport',             description: '10 questions sur le sport et les jeux olympiques.',                              weekSlot: 4 },
-      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Cinéma',            description: '10 questions sur le cinéma et les réalisateurs célèbres.',                       weekSlot: 5 },
-      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Littérature',       description: '10 questions sur les auteurs et œuvres littéraires.',                            weekSlot: 6 },
-      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Technologie',       description: '10 questions sur les inventions et la technologie moderne.',                     weekSlot: 7 },
-      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Nature',            description: '10 questions sur les animaux, plantes et écosystèmes.',                         weekSlot: 8 },
-      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Gastronomie',       description: '10 questions sur la cuisine du monde et la gastronomie.',                        weekSlot: 9 },
+      // INTELLIGENCE — quiz IA (5)
+      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Géographie',        description: '5 questions sur la géographie mondiale.',                                          weekSlot: 0 },
+      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Histoire',          description: '5 questions sur les grands événements historiques.',                             weekSlot: 1 },
+      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Sciences',          description: '5 questions sur les sciences naturelles et physiques.',                          weekSlot: 2 },
+      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Art & Culture',     description: '5 questions sur l\'art, la musique et la culture mondiale.',                     weekSlot: 3 },
+      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Sport',             description: '5 questions sur le sport et les jeux olympiques.',                              weekSlot: 4 },
+      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Cinéma',            description: '5 questions sur le cinéma et les réalisateurs célèbres.',                       weekSlot: 5 },
+      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Littérature',       description: '5 questions sur les auteurs et œuvres littéraires.',                            weekSlot: 6 },
+      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Technologie',       description: '5 questions sur les inventions et la technologie moderne.',                     weekSlot: 7 },
+      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Nature',            description: '5 questions sur les animaux, plantes et écosystèmes.',                         weekSlot: 8 },
+      { stat: StatName.INTELLIGENCE, type: ChallengeType.QUIZ_IA, title: 'Quiz Gastronomie',       description: '5 questions sur la cuisine du monde et la gastronomie.',                        weekSlot: 9 },
 
       // ESPRIT — énigmes IA (10)
       { stat: StatName.SPIRIT, type: ChallengeType.ENIGMA_IA, title: 'Énigmes classiques',         description: '2 énigmes de logique et de réflexion.',                                           weekSlot: 0 },
