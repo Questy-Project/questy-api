@@ -269,7 +269,7 @@ export class TournamentService {
     const finished = combat.userHpCurrent <= 0 || combat.opponentHpCurrent <= 0 || combat.turns.length >= 10;
 
     if (finished) {
-      const playerWon = combat.userHpCurrent > combat.opponentHpCurrent;
+      const playerWon = combat.userHpCurrent >= combat.opponentHpCurrent;
       combat.status       = 'finished';
       combat.winnerId     = playerWon ? userId : combat.opponentId;
       combat.userHpEnd    = combat.userHpCurrent;

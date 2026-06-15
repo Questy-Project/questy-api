@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 export type TurnLog = {
   turn: number;
@@ -12,7 +12,6 @@ export type TurnLog = {
   opponentHpAfter: number;
 };
 
-@Unique(['userId', 'weekNumber', 'year'])
 @Entity('tournament_combats')
 export class TournamentCombat {
   @PrimaryGeneratedColumn('uuid')
