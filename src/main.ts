@@ -4,7 +4,9 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.getHttpAdapter().getInstance().set('etag', false); // désactive le cache navigateur (304) sur les GET
+  const express = app.getHttpAdapter().getInstance();
+  express.set('etag', false); // désactive les 304 ETags
+  express.use((_req: any, res: any, next: any) => { res.set('Cache-Control', 'no-store'); next(); });
 
   // Préfix pour toutes les routes /api
   app.setGlobalPrefix('api');
