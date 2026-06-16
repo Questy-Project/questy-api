@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
@@ -12,6 +13,7 @@ import { QuizSession } from './entities/quiz-session.entity';
 import { StartQuizDto } from './dto/start-quiz.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { ActivitiesService } from '../activities/activities.service';
+import { PartsService } from '../parts/parts.service';
 
 type ChatMessage = { role: 'user' | 'assistant' | 'system'; content: string };
 
@@ -30,6 +32,7 @@ export class QuizService {
     private readonly config: ConfigService,
     private readonly httpService: HttpService,
     private readonly activitiesService: ActivitiesService,
+    private readonly partsService: PartsService,
   ) {}
 
   private buildSystemPrompt(title: string, author: string, difficulty: string, activityName: string, volume?: string): string {
@@ -108,9 +111,10 @@ Commence directement par une courte présentation enthousiaste du jeu et pose la
 
   private computeRewards(score: number, duration: number, intensity: number): { xpGained: number; partsUnlocked: number } {
     const baseXp = Math.round(duration * intensity);
-    const multiplier = score >= 90 ? 1.0 : score >= 70 ? 0.75 : score >= 50 ? 0.5 : 0.25;
+    // Mêmes paliers que l'effort physique : 1 / 2/3 / 1/3 / 0
+    const multiplier = score >= 90 ? 1 : score >= 70 ? 2 / 3 : score >= 50 ? 1 / 3 : 0;
     const xpGained = Math.round(baseXp * multiplier);
-    const partsUnlocked = score >= 90 ? 2 : score >= 70 ? 1 : 0;
+    const partsUnlocked = score >= 70 ? 3 : score >= 50 ? 2 : 1;
     return { xpGained, partsUnlocked };
   }
 
@@ -149,22 +153,25 @@ Commence directement par une courte présentation enthousiaste du jeu et pose la
   async message(userId: string, dto: SendMessageDto) {
     const session = await this.quizRepository.findOne({ where: { id: dto.sessionId, userId } });
     if (!session) throw new NotFoundException('Session de quiz introuvable.');
+    if (session.status === 'completed') throw new BadRequestException('Ce quiz est déjà terminé.');
 
     const messages: ChatMessage[] = [
       ...session.history,
       { role: 'user', content: dto.message },
     ];
 
+    // Calculé avant l'appel API pour bloquer un SCORE_FINAL anticipé (< 5 réponses)
+    const userAnswerCount = messages.filter(
+      m => m.role === 'user' && m.content !== 'Commence le quiz.'
+    ).length;
+
     const raw = await this.callApi(messages);
-    const apiResponse = raw.includes('SCORE_FINAL')
+    const apiResponse = (raw.includes('SCORE_FINAL') && userAnswerCount >= 5)
       ? raw
       : this.truncateToQuestion(raw, session.difficulty);
 
     session.history = [...messages, { role: 'assistant', content: apiResponse }];
 
-    const userAnswerCount = messages.filter(
-      m => m.role === 'user' && m.content !== 'Commence le quiz.'
-    ).length;
     const scoreMatch = userAnswerCount >= 5
       ? apiResponse.match(/SCORE_FINAL:\s*(\d+)%/)
       : null;
@@ -174,14 +181,15 @@ Commence directement par une courte présentation enthousiaste du jeu et pose la
       const { xpGained, partsUnlocked } = this.computeRewards(score, session.duration ?? 60, intensity);
 
       if (session.activityId && session.duration) {
-        // xpOverride : le barème du quiz remplace la formule durée×intensité×multiplicateur
-        // les cœurs restent calculés par logActivity selon la durée (pas de double ajout)
+        // skipParts=true : les cœurs sont attribués selon le score, pas la durée
         await this.activitiesService.logActivity(
           userId,
           { activityId: session.activityId, duration: session.duration, intensity },
           xpGained,
+          true,
         );
       }
+      await this.partsService.addParts(userId, partsUnlocked);
 
       session.status        = 'completed';
       session.score         = score;

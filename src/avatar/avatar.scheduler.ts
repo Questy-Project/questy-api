@@ -15,10 +15,8 @@ export class AvatarScheduler {
     private readonly avatarService: AvatarService,
   ) {}
 
-  // Reset mensuel le 1er du mois à 00:00 heure de Bruxelles
-  // Les stats reviennent au socle de fidélité calculé depuis les valeurs du mois précédent
-  // Le timezone 'Europe/Brussels' garantit le bon déclenchement peu importe le serveur (Railway)
-  @Cron('0 0 1 * *', { timeZone: 'Europe/Brussels' })
+  // Reset mensuel le 1er du mois à 00:00 UTC — cohérent avec tous les autres crons
+  @Cron('0 0 1 * *')
   async handleMonthlyReset() {
     this.logger.log('Début du reset mensuel des stats avatar...');
     const avatars = await this.avatarRepository.find();

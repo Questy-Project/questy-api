@@ -30,7 +30,7 @@ export class ActivitiesService {
     return this.activityRepository.find();
   }
 
-  async logActivity(userId: string, dto: LogActivityDto, xpOverride?: number): Promise<ActivityLog> {
+  async logActivity(userId: string, dto: LogActivityDto, xpOverride?: number, skipParts = false): Promise<ActivityLog> {
     const today = new Date();
     const start = new Date(
       today.getFullYear(),
@@ -110,7 +110,7 @@ export class ActivitiesService {
       statPrimary,
       statSecondary,
     );
-    await this.partsService.addParts(userId, partsUnlocked);
+    if (!skipParts) await this.partsService.addParts(userId, partsUnlocked);
 
     return savedLog;
   }

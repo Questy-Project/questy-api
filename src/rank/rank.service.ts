@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cron } from '@nestjs/schedule';
 import { MonthlyRank, RankTier } from './entities/monthly-rank.entity';
-import { AvatarService } from '../avatar/avatar.service';
 
 const TIER_COINS: Record<RankTier, number> = {
   [RankTier.BRONZE]: 100,
@@ -17,7 +16,6 @@ export class RankService {
   constructor(
     @InjectRepository(MonthlyRank)
     private readonly rankRepo: Repository<MonthlyRank>,
-    private readonly avatarService: AvatarService,
   ) {}
 
   currentPeriod(): { month: number; year: number } {
@@ -82,10 +80,6 @@ export class RankService {
     this.assignTiers(ranks);
     for (const rank of ranks) rank.coinsEarned = TIER_COINS[rank.tier];
     await this.rankRepo.save(ranks);
-
-    // Reset mensuel des stats de chaque avatar actif ce mois
-    for (const rank of ranks) {
-      await this.avatarService.resetMonthlyStats(rank.userId);
-    }
+    // Reset des stats avatar géré exclusivement par AvatarScheduler.handleMonthlyReset()
   }
 }

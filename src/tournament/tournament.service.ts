@@ -297,6 +297,9 @@ export class TournamentService {
   }
 
   async playTurn(userId: string, combatId: string, playerAction: string) {
+    const VALID_ACTIONS = ['PHYSICAL_ATTACK', 'PHYSICAL_BLOCK', 'MAGIC_ATTACK', 'MAGIC_BLOCK'];
+    if (!VALID_ACTIONS.includes(playerAction)) throw new BadRequestException('Action invalide.');
+
     const combat = await this.combatRepo.findOne({ where: { id: combatId, userId } });
     if (!combat) throw new NotFoundException('Combat introuvable.');
     if (combat.status !== 'in_progress') throw new BadRequestException('Ce combat est déjà terminé.');
