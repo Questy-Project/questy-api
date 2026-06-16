@@ -16,5 +16,6 @@ import { PartsModule } from '../parts/parts.module';
   ],
   controllers: [ActivitiesController],
   providers: [ActivitiesSeeder, ActivitiesService],
+  exports: [ActivitiesService],
 })
 export class ActivitiesModule {}

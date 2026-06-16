@@ -3,9 +3,12 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create(AppModule);
+  const express = app.getHttpAdapter().getInstance();
+  express.set('etag', false); // désactive les 304 ETags
+  express.use((_req: any, res: any, next: any) => { res.set('Cache-Control', 'no-store'); next(); });
 
-  // Préfix pour toutes les routes /api 
+  // Préfix pour toutes les routes /api
   app.setGlobalPrefix('api');
 
   //Permet d'activer la validation auto sur tout les DTOs

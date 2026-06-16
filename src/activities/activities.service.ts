@@ -30,7 +30,7 @@ export class ActivitiesService {
     return this.activityRepository.find();
   }
 
-  async logActivity(userId: string, dto: LogActivityDto): Promise<ActivityLog> {
+  async logActivity(userId: string, dto: LogActivityDto, xpOverride?: number, skipParts = false): Promise<ActivityLog> {
     const today = new Date();
     const start = new Date(
       today.getFullYear(),
@@ -83,7 +83,9 @@ export class ActivitiesService {
       }
     }
 
-    const rawXp = Math.round(dto.duration * dto.intensity * xpMultiplier);
+    const rawXp = xpOverride !== undefined
+      ? xpOverride
+      : Math.round(dto.duration * dto.intensity * xpMultiplier);
     //Plafond de 360xp quotidien
     const xpGained = Math.min(rawXp, 360 - totalXp);
 
@@ -108,7 +110,7 @@ export class ActivitiesService {
       statPrimary,
       statSecondary,
     );
-    await this.partsService.addParts(userId, partsUnlocked);
+    if (!skipParts) await this.partsService.addParts(userId, partsUnlocked);
 
     return savedLog;
   }

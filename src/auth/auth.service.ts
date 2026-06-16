@@ -35,12 +35,20 @@ export class AuthService {
       password: hashed,
     });
 
-    await this.avatarRepository.save(this.avatarRepository.create({userId: user.id}));
+    await this.avatarRepository.save(
+      this.avatarRepository.create({
+        userId: user.id,
+        silhouette: dto.silhouette ?? 'A',
+        skinTone: dto.skinTone ?? 1,
+        hairStyle: dto.hairStyle ?? 1,
+        hairColor: dto.hairColor ?? 1,
+      }),
+    );
 
     await this.partsRepository.save(this.partsRepository.create({userId: user.id}));
 
     return {
-      access_token: this.jwtService.sign({ sub: user.id, email: user.email }),
+      access_token: this.jwtService.sign({ sub: user.id, email: user.email, role: user.role }),
     };
   }
 
@@ -52,7 +60,7 @@ export class AuthService {
     if (!valid) throw new UnauthorizedException('Identifiants incorrects');
 
     return {
-      access_token: this.jwtService.sign({ sub: user.id, email: user.email }),
+      access_token: this.jwtService.sign({ sub: user.id, email: user.email, role: user.role }),
     };
   }
 }
