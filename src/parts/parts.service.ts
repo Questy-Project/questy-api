@@ -35,6 +35,17 @@ export class PartsService {
     return this.partRepository.save(parts);
   }
 
+  // 3× par jour (00h, 08h, 16h) — retire 1 cœur aux joueurs inactifs
+  @Cron('0 0,8,16 * * *')
+  async depleteHourly(): Promise<void> {
+    const allParts = await this.partRepository.find();
+    for (const part of allParts) {
+      if (part.stock <= 0) continue;
+      part.stock = Math.max(part.stock - 1, 0);
+      await this.partRepository.save(part);
+    }
+  }
+
   // Appelé chaque nuit à minuit — recharge d'1 partie les users éligibles
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async rechargeNightly(): Promise<void> {

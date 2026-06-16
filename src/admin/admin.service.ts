@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindManyOptions, ILike, Repository } from 'typeorm';
 import { AvatarScheduler } from '../avatar/avatar.scheduler';
 import { PartsService } from '../parts/parts.service';
 import { AvatarService } from '../avatar/avatar.service';
@@ -44,28 +44,38 @@ export class AdminService {
     return { message: 'Recharge des parties exécutée' };
   }
 
-  async getUsers() {
-    const users = await this.userRepository.find();
+  async getUsers(page = 1, limit = 10, search?: string) {
     const { month, year } = this.rankService.currentPeriod();
-    const result: Array<Record<string, unknown>> = [];
 
-    for (const user of users) {
-      const avatar     = await this.avatarRepository.findOne({ where: { userId: user.id } });
-      const parts      = await this.partRepository.findOne({ where: { userId: user.id } });
-      const monthlyRank = await this.monthlyRankRepository.findOne({ where: { userId: user.id, month, year } });
+    const findOptions: FindManyOptions<User> = {
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { createdAt: 'DESC' },
+    };
+    if (search?.trim()) {
+      findOptions.where = [
+        { pseudo: ILike(`%${search.trim()}%`) },
+        { email:  ILike(`%${search.trim()}%`) },
+      ];
+    }
 
-      // Mot de passe affiché uniquement pour les comptes de test (seed + comptes de dev connus)
-      const TEST_ACCOUNTS = ['admin@test.com', 'user@test.com'];
-      const isTestAccount = user.email.endsWith('@questy.seed') || TEST_ACCOUNTS.includes(user.email);
-      const testPassword  = isTestAccount ? 'Password123!' : '***';
+    const [users, total] = await this.userRepository.findAndCount(findOptions);
 
-      result.push({
-        id:           user.id,
-        pseudo:       user.pseudo,
-        email:        user.email,
-        testPassword,
-        role:         user.role,
-        rank: monthlyRank ? { tier: monthlyRank.tier, totalPoints: monthlyRank.totalPoints } : { tier: 'BRONZE', totalPoints: 0 },
+    const data = await Promise.all(users.map(async (user) => {
+      const [avatar, parts, monthlyRank] = await Promise.all([
+        this.avatarRepository.findOne({ where: { userId: user.id } }),
+        this.partRepository.findOne({ where: { userId: user.id } }),
+        this.monthlyRankRepository.findOne({ where: { userId: user.id, month, year } }),
+      ]);
+
+      return {
+        id:    user.id,
+        pseudo: user.pseudo,
+        email:  user.email,
+        role:   user.role,
+        rank: monthlyRank
+          ? { tier: monthlyRank.tier, totalPoints: monthlyRank.totalPoints }
+          : { tier: 'BRONZE', totalPoints: 0 },
         avatar: avatar ? {
           level:        avatar.level,
           xp:           avatar.xp,
@@ -78,10 +88,10 @@ export class AdminService {
           vitality:     avatar.vitality,
         } : null,
         parts: parts ? { stock: parts.stock } : null,
-      });
-    }
+      };
+    }));
 
-    return result;
+    return { data, total, page, limit };
   }
 
   async patchStats(userId: string, dto: PatchStatsDto): Promise<Avatar> {

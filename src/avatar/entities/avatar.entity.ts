@@ -34,6 +34,7 @@ export class Avatar {
   endurance!: number;
 
   @Column({ default: 0 })
+  
   intelligence!: number;
 
   @Column({ default: 0 })
