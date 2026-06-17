@@ -23,7 +23,7 @@ export class QuizService {
   private readonly model  = 'openai/gpt-oss-120b:free';
 
   private readonly difficultyToIntensity: Record<string, number> = {
-    easy: 1, medium: 1.5, hard: 2,
+    easy: 1.00, medium: 1.15, hard: 1.30,
   };
 
   constructor(

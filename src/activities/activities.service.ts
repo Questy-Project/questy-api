@@ -89,7 +89,9 @@ export class ActivitiesService {
     //Plafond de 360xp quotidien
     const xpGained = Math.min(rawXp, 360 - totalXp);
 
-    const partsUnlocked = dto.duration <= 30 ? 2 : dto.duration <= 60 ? 4 : 6;
+    const INTENSITY_PARTS: Record<number, number> = { 1: 1, 1.15: 2, 1.30: 3 };
+    const partsByDuration = dto.duration <= 30 ? 1 : dto.duration <= 60 ? 2 : 3;
+    const partsUnlocked = partsByDuration + (INTENSITY_PARTS[dto.intensity] ?? 1);
 
     const log = Object.assign(new ActivityLog(), {
       userId,
