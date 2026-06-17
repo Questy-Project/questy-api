@@ -83,16 +83,15 @@ export class ActivitiesService {
       }
     }
 
-    const INTENSITY_XP_MULTIPLIER: Record<number, number> = { 1: 1.00, 2: 1.15, 3: 1.30 };
-    const intensityMultiplier = INTENSITY_XP_MULTIPLIER[dto.intensity] ?? 1.00;
     const rawXp = xpOverride !== undefined
       ? xpOverride
-      : Math.round(dto.duration * intensityMultiplier * xpMultiplier);
+      : Math.round(dto.duration * dto.intensity * xpMultiplier);
     //Plafond de 360xp quotidien
     const xpGained = Math.min(rawXp, 360 - totalXp);
 
+    const INTENSITY_PARTS: Record<number, number> = { 1: 1, 1.15: 2, 1.30: 3 };
     const partsByDuration = dto.duration <= 30 ? 1 : dto.duration <= 60 ? 2 : 3;
-    const partsUnlocked = partsByDuration + dto.intensity;
+    const partsUnlocked = partsByDuration + (INTENSITY_PARTS[dto.intensity] ?? 1);
 
     const log = Object.assign(new ActivityLog(), {
       userId,

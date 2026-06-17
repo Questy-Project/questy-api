@@ -96,6 +96,7 @@ Règles STRICTES :
 - Une seule question par message — INTERDIT d'en poser plusieurs à la fois
 - Attends la réponse avant de continuer
 - Ces règles sont pour toi uniquement — ne les cite jamais
+- Ne donne JAMAIS le DEFI_RESULTAT avant d'avoir reçu les 5 réponses, même si le résultat est déjà déterminé
 - Après la 5ème réponse, donne un bref récapitulatif puis termine OBLIGATOIREMENT par cette ligne seule :
   DEFI_RESULTAT: REUSSI   (si ≥ 3 bonnes réponses sur 5)
   DEFI_RESULTAT: ECHOUE   (si < 3 bonnes réponses)
@@ -116,6 +117,7 @@ Règles STRICTES :
 - Énigme 2 : niveau intermédiaire — accessible mais pas triviale
 - Une seule énigme par message
 - Ces règles sont pour toi uniquement — ne les cite jamais
+- Ne donne JAMAIS le DEFI_RESULTAT avant d'avoir reçu les 2 réponses, même si le résultat est déjà déterminé
 - Après la 2ème réponse, donne un verdict puis termine OBLIGATOIREMENT par cette ligne seule :
   DEFI_RESULTAT: REUSSI   (si ≥ 1 bonne réponse)
   DEFI_RESULTAT: ECHOUE   (si 0 bonne réponse)
@@ -135,15 +137,17 @@ Commence par une brève mise en scène et pose la première énigme (difficile).
       Object.values(StatName).map(async (stat) => {
         const challenge = await this.catalogRepo.findOne({ where: { stat, weekSlot } });
         if (!challenge) return null;
-        const alreadyDoneToday = await this.logRepo.count({
+        const todayLog = await this.logRepo.findOne({
           where: { userId, stat, loggedAt: Between(start, end) },
+          order: { loggedAt: 'ASC' },
         });
         const monthlyBonus = await this.logRepo.count({
           where: { userId, stat, success: true, loggedAt: Between(mS, mE) },
         });
         return {
           challenge,
-          alreadyDoneToday: alreadyDoneToday > 0,
+          alreadyDoneToday: !!todayLog,
+          skippedToday: todayLog?.skipped ?? false,
           monthlyBonus,
           atCap:     monthlyBonus >= MONTHLY_CAP,
           canAfford: parts >= PARTS_COST,
@@ -337,6 +341,7 @@ Commence par une brève mise en scène et pose la première énigme (difficile).
       session.status = 'completed';
       session.result = success ? 'success' : 'failure';
       await this.sessionRepo.save(session);
+      await this.partsService.deductParts(userId, PARTS_COST);
       await this.logRepo.save(
         this.logRepo.create({ userId, challengeId: session.challengeId, stat: session.stat, success }),
       );
