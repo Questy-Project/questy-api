@@ -39,8 +39,18 @@ export class ChallengesController {
     return this.challengesService.completePhysical(req.user.userId, id);
   }
 
+  @Post('ia/skip')
+  skipIA(@Body() body: { sessionId: string }, @Request() req: any) {
+    return this.challengesService.skipIA(req.user.userId, body.sessionId);
+  }
+
   @Post(':id/abandon')
   abandonPhysical(@Param('id') id: string, @Request() req: any) {
     return this.challengesService.abandonPhysical(req.user.userId, id);
+  }
+
+  @Post(':id/skip')
+  skipPhysical(@Param('id') id: string, @Request() req: any) {
+    return this.challengesService.skipPhysical(req.user.userId, id);
   }
 }

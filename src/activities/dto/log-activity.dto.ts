@@ -30,6 +30,6 @@ export class LogActivityDto {
   @IsIn([30,60,90,120])
   duration!: number;
 
-  @IsIn([1,1.5,2])
+  @IsIn([1, 1.15, 1.30])
   intensity!: number;
 }

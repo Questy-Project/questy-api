@@ -22,6 +22,9 @@ export class ChallengeLog {
   @Column()
   success!: boolean;
 
+  @Column({ default: false })
+  skipped!: boolean;
+
   @CreateDateColumn()
   loggedAt!: Date;
 }
