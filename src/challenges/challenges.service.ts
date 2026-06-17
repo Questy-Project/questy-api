@@ -20,7 +20,7 @@ import { AnswerChallengeDto } from './dto/answer-challenge.dto';
 
 type ChatMessage = { role: 'user' | 'assistant' | 'system'; content: string };
 
-const PARTS_COST  = 3;
+const PARTS_COST  = 1;
 const MONTHLY_CAP = 15;
 
 @Injectable()
@@ -176,7 +176,6 @@ Commence par une brève mise en scène et pose la première énigme (difficile).
     const parts = await this.partsService.getStock(userId);
     if (parts < PARTS_COST) throw new BadRequestException('Pas assez de cœurs pour relever ce défi.');
 
-    await this.partsService.deductParts(userId, PARTS_COST);
     return { ok: true };
   }
 
@@ -190,6 +189,7 @@ Commence par une brève mise en scène et pose la première énigme (difficile).
     });
     if (doneToday > 0) throw new BadRequestException('Tu as déjà relevé ce défi aujourd\'hui.');
 
+    await this.partsService.deductParts(userId, PARTS_COST);
     await this.logRepo.save(
       this.logRepo.create({ userId, challengeId, stat: challenge.stat, success: true }),
     );
@@ -222,8 +222,6 @@ Commence par une brève mise en scène et pose la première énigme (difficile).
     const catalog = await this.catalogRepo.findOne({ where: { stat: dto.stat, weekSlot: this.getWeekSlot() } });
     if (!catalog) throw new NotFoundException('Défi introuvable dans le catalogue.');
 
-    await this.partsService.deductParts(userId, PARTS_COST);
-
     const systemPrompt = this.buildIAPrompt(dto.stat);
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
@@ -243,8 +241,6 @@ Commence par une brève mise en scène et pose la première énigme (difficile).
       );
       return { sessionId: session.id, message: apiMessage };
     } catch (err) {
-      // rembourse les cœurs si l'API est indisponible au démarrage
-      await this.partsService.addParts(userId, PARTS_COST);
       throw new ServiceUnavailableException('Le défi IA est temporairement indisponible. Réessaie plus tard.');
     }
   }
@@ -259,6 +255,7 @@ Commence par une brève mise en scène et pose la première énigme (difficile).
     });
     if (alreadyLogged > 0) return { ok: true };
 
+    await this.partsService.deductParts(userId, PARTS_COST);
     await this.logRepo.save(
       this.logRepo.create({ userId, challengeId, stat: challenge.stat, success: false }),
     );
@@ -278,8 +275,45 @@ Commence par une brève mise en scène et pose la première énigme (difficile).
       where: { userId, stat: session.stat, loggedAt: Between(start, end) },
     });
     if (alreadyLogged === 0) {
+      await this.partsService.deductParts(userId, PARTS_COST);
       await this.logRepo.save(
         this.logRepo.create({ userId, challengeId: session.challengeId, stat: session.stat, success: false }),
+      );
+    }
+    return { ok: true };
+  }
+
+  async skipPhysical(userId: string, challengeId: string) {
+    const challenge = await this.catalogRepo.findOne({ where: { id: challengeId } });
+    if (!challenge) throw new NotFoundException('Défi introuvable.');
+
+    const { start, end } = this.todayBounds();
+    const alreadyLogged = await this.logRepo.count({
+      where: { userId, stat: challenge.stat, loggedAt: Between(start, end) },
+    });
+    if (alreadyLogged > 0) return { ok: true };
+
+    await this.logRepo.save(
+      this.logRepo.create({ userId, challengeId, stat: challenge.stat, success: false, skipped: true }),
+    );
+    return { ok: true };
+  }
+
+  async skipIA(userId: string, sessionId: string) {
+    const session = await this.sessionRepo.findOne({ where: { id: sessionId, userId } });
+    if (!session) throw new NotFoundException('Session de défi introuvable.');
+    if (session.status !== 'pending') return { ok: true };
+
+    session.status = 'abandoned';
+    await this.sessionRepo.save(session);
+
+    const { start, end } = this.todayBounds();
+    const alreadyLogged = await this.logRepo.count({
+      where: { userId, stat: session.stat, loggedAt: Between(start, end) },
+    });
+    if (alreadyLogged === 0) {
+      await this.logRepo.save(
+        this.logRepo.create({ userId, challengeId: session.challengeId, stat: session.stat, success: false, skipped: true }),
       );
     }
     return { ok: true };
