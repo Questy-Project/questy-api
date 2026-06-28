@@ -69,7 +69,7 @@ export class RankService {
     const users = await this.userRepo.find({ where: { id: In(userIds) } });
     return ranks.map(r => ({
       userId:      r.userId,
-      pseudo:      users.find(u => u.id === r.userId)?.pseudo ?? r.userId.slice(0, 8),
+      pseudo:      users.find(u => u.id === r.userId)?.pseudo ?? 'Inconnu',
       totalPoints: r.totalPoints,
       tier:        r.tier,
     }));
