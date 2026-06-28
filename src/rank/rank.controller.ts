@@ -11,4 +11,10 @@ export class RankController {
   getMyRank(@Request() req: any) {
     return this.rankService.getMyRank(req.user.userId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('leaderboard')
+  getLeaderboard() {
+    return this.rankService.getMonthlyLeaderboard();
+  }
 }
