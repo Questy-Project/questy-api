@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Cron } from '@nestjs/schedule';
 import { MonthlyRank, RankTier } from './entities/monthly-rank.entity';
+import { User } from '../users/entities/user.entity';
 
 const TIER_COINS: Record<RankTier, number> = {
   [RankTier.BRONZE]: 100,
@@ -16,6 +17,8 @@ export class RankService {
   constructor(
     @InjectRepository(MonthlyRank)
     private readonly rankRepo: Repository<MonthlyRank>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
   ) {}
 
   currentPeriod(): { month: number; year: number } {
@@ -53,6 +56,23 @@ export class RankService {
     if (ranks.length === 0) return;
     this.assignTiers(ranks);
     await this.rankRepo.save(ranks);
+  }
+
+  async getMonthlyLeaderboard() {
+    const { month, year } = this.currentPeriod();
+    const ranks = await this.rankRepo.find({
+      where: { month, year },
+      order: { totalPoints: 'DESC' },
+    });
+    if (ranks.length === 0) return [];
+    const userIds = ranks.map(r => r.userId);
+    const users = await this.userRepo.find({ where: { id: In(userIds) } });
+    return ranks.map(r => ({
+      userId:      r.userId,
+      pseudo:      users.find(u => u.id === r.userId)?.pseudo ?? 'Inconnu',
+      totalPoints: r.totalPoints,
+      tier:        r.tier,
+    }));
   }
 
   // Appelé par TournamentService à la fin de chaque combat
