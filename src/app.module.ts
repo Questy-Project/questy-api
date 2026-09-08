@@ -11,6 +11,7 @@ import { ChallengesModule } from './challenges/challenges.module';
 import { TournamentModule } from './tournament/tournament.module';
 import { RankModule } from './rank/rank.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { HealthModule } from './health/health.module';
 
 
 @Module({
@@ -36,6 +37,7 @@ import { ScheduleModule } from '@nestjs/schedule';
       }),
     }),
     ScheduleModule.forRoot(),
+    HealthModule,
     AuthModule,
     ActivitiesModule,
     AvatarModule,
