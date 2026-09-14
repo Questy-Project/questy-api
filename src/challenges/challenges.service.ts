@@ -26,7 +26,9 @@ const MONTHLY_CAP = 15;
 @Injectable()
 export class ChallengesService {
   private readonly apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-  private readonly model  = 'openai/gpt-oss-120b:free';
+  // Fallback OpenRouter natif : si le modèle principal est rate-limité (pool gratuit partagé),
+  // bascule automatiquement sur un modèle d'un autre fournisseur.
+  private readonly models = ['google/gemma-4-26b-a4b-it:free', 'nvidia/nemotron-3-super-120b-a12b:free'];
 
   constructor(
     @InjectRepository(ChallengeCatalog)
@@ -69,7 +71,7 @@ export class ChallengesService {
     const res = await firstValueFrom(
       this.httpService.post(
         this.apiUrl,
-        { model: this.model, messages, temperature: 0.3, max_tokens: 1024 },
+        { models: this.models, messages, temperature: 0.3, max_tokens: 1024 },
         {
           headers: {
             Authorization: `Bearer ${this.config.get<string>('OPENROUTER_API_KEY')}`,
@@ -245,6 +247,7 @@ Commence par une brève mise en scène et pose la première énigme (difficile).
       );
       return { sessionId: session.id, message: apiMessage };
     } catch (err) {
+      console.error('[ChallengesService] Erreur OpenRouter:', err?.response?.data ?? err);
       throw new ServiceUnavailableException('Le défi IA est temporairement indisponible. Réessaie plus tard.');
     }
   }
