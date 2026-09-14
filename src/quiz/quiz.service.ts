@@ -20,7 +20,9 @@ type ChatMessage = { role: 'user' | 'assistant' | 'system'; content: string };
 @Injectable()
 export class QuizService {
   private readonly apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-  private readonly model  = 'openai/gpt-oss-120b:free';
+  // Fallback OpenRouter natif : si le modèle principal est rate-limité (pool gratuit partagé),
+  // bascule automatiquement sur un modèle d'un autre fournisseur.
+  private readonly models = ['google/gemma-4-26b-a4b-it:free', 'nvidia/nemotron-3-super-120b-a12b:free'];
 
   private readonly difficultyToIntensity: Record<string, number> = {
     easy: 1.00, medium: 1.15, hard: 1.30,
@@ -82,7 +84,7 @@ Commence directement par une courte présentation enthousiaste du jeu et pose la
     const response = await firstValueFrom(
       this.httpService.post(
         this.apiUrl,
-        { model: this.model, messages, temperature: 0.3, max_tokens: 1024 },
+        { models: this.models, messages, temperature: 0.3, max_tokens: 1024 },
         {
           headers: {
             Authorization: `Bearer ${this.config.get<string>('OPENROUTER_API_KEY')}`,
